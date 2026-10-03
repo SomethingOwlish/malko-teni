@@ -1,157 +1,217 @@
-/* ===== Тени над Дунаем — карточки Малкавиан ===== */
+/* ===== Тени над Дунаем — карточки Малкавиан · v2 «безумие растёт по ночам» ===== */
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
+
+/* ---------- ночи: интенсивность ---------- */
+html{--k:0;--p2:0;--split:0;--drift:0}
+html[data-night="1"]{--k:.08;--p2:.15;--split:0;--drift:.15}
+html[data-night="2"]{--k:.25;--p2:.55;--split:2;--drift:.45}
+html[data-night="3"]{--k:.55;--p2:1;--split:5;--drift:.9}
+html[data-night="4"]{--k:1;--p2:1;--split:9;--drift:1.7}
+
+/* ---------- голоса: базовые палитры ----------
+   --bg0 спокойный фон (лёгкий оттенок), --bg4 «неправильный» фон четвёртой ночи,
+   --a2a второй акцент спокойный, --a2b он же к N4. Основной акцент у всех бордовый. */
+html{--a1:#8a1a2b;--a1b:#b3102e}
+html[data-voice=euthymius]{--bg0:#f2e7cd;--bg4:#e4ecbf;--ink:#2b1d0e;--muted:#7a5f3d;--a2a:#2f4f9a;--a2b:#1f6bff;--blot:#2b1d0e;--drip:#8a1a2b;
+  --f-head:'Old Standard TT',serif;--f-body:'Old Standard TT',serif;--f-card:'Old Standard TT',serif;--radius:2px}
+html[data-voice=ashme]{--bg0:#efe5e2;--bg4:#f4d2c2;--ink:#2c1a17;--muted:#86685f;--a2a:#cf6a35;--a2b:#ff5400;--blot:#4d3d39;--drip:#cf6a35;
+  --f-head:'Forum',serif;--f-body:'Literata',serif;--f-card:'Forum',serif;--radius:12px}
+html[data-voice=lane]{--bg0:#f1f4fa;--bg4:#fff2c4;--ink:#24305a;--muted:#67708c;--a2a:#3a8a3e;--a2b:#28ff5e;--blot:#2a3f9a;--drip:#3a8a3e;
+  --f-head:'Caveat',cursive;--f-body:'PT Sans',sans-serif;--f-card:'Caveat',cursive;--radius:5px}
+html[data-voice=prokhor]{--bg0:#efefeb;--bg4:#dff1ea;--ink:#262422;--muted:#6e6860;--a2a:#a8843a;--a2b:#ffd21a;--blot:#2a2724;--drip:#e9dcb8;
+  --f-head:'Ruslan Display',serif;--f-body:'PT Serif',serif;--f-card:'PT Serif',serif;--radius:3px}
+html[data-voice=tommazo]{--bg0:#f3efe6;--bg4:#ece2f3;--ink:#1f1b16;--muted:#6f665a;--a2a:#6a3aa0;--a2b:#a51fff;--blot:#7a1414;--drip:#8a1a2b;
+  --f-head:'EB Garamond',serif;--f-body:'EB Garamond',serif;--f-card:'EB Garamond',serif;--radius:0}
+
+/* производные: всё съезжает к N4 */
+html{
+  --bg:color-mix(in oklab,var(--bg4) calc(var(--k)*100%),var(--bg0));
+  --paper:color-mix(in oklab,var(--bg) 45%,#fff);
+  --line:color-mix(in oklab,var(--ink) 18%,transparent);
+  --a1now:color-mix(in oklab,var(--a1b) calc(var(--k)*100%),var(--a1));
+  --a2:color-mix(in oklab,var(--a2b) calc(var(--k)*100%),var(--a2a));
+  --a2p:color-mix(in oklab,var(--a2) calc(var(--p2)*100%),var(--a1now));
+  --title:var(--ink);
+}
+/* после полуночи (по часам игрока) */
+html[data-late]{
+  --bg:color-mix(in oklab,var(--bg0) 9%,#0d0b0e);
+  --paper:color-mix(in oklab,var(--bg0) 7%,#1a1619);
+  --ink:#ece4d8;--muted:#a1968a;--title:#f6eee2;
+  --line:rgba(255,255,255,.14);
+  --a1now:#d8455e;
+  --a2:var(--a2b);--a2p:var(--a2b);
+  --blot:#000;
+}
+
 body{
-  min-height:100vh;
-  background:var(--bg);
-  background-image:var(--bg-img);
-  background-attachment:fixed;
-  color:var(--ink);
-  font-family:var(--f-body);
-  font-size:17px;line-height:1.55;
-  -webkit-font-smoothing:antialiased;
+  min-height:100vh;background-color:var(--bg);color:var(--ink);
+  font-family:var(--f-body);font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased;
+  transition:background-color 1.5s;
 }
-a{color:var(--accent)}
-.wrap{max-width:720px;margin:0 auto;padding:28px 16px 40px}
+a{color:var(--a1now)}
+.wrap{position:relative;z-index:1;max-width:720px;margin:0 auto;padding:22px 16px 40px}
 
-/* header */
-.head{position:relative;text-align:center;padding:26px 8px 18px}
-.head .epithet{font-family:var(--f-head);letter-spacing:.18em;text-transform:uppercase;font-size:12px;color:var(--muted)}
-.head h1{font-family:var(--f-head);font-weight:400;font-size:clamp(34px,8vw,54px);line-height:1.05;margin:10px 0 6px;color:var(--title)}
-.head .sub{font-style:italic;color:var(--muted);font-size:15px}
-.head .sigil{width:64px;height:64px;margin:0 auto 6px;display:block}
+/* фоновые фактуры */
+html[data-voice=euthymius] body{background-image:radial-gradient(ellipse at center,transparent 40%,color-mix(in oklab,var(--ink) 22%,transparent) 120%)}
+html[data-voice=ashme] body{background-image:radial-gradient(circle at 15% 105%,color-mix(in oklab,var(--a2) 22%,transparent),transparent 45%),radial-gradient(1px 1px at 20% 30%,rgba(60,40,35,.35),transparent),radial-gradient(1px 1px at 70% 80%,rgba(60,40,35,.3),transparent);background-size:auto,37px 41px,53px 47px}
+html[data-voice=lane] body{background-image:linear-gradient(90deg,transparent 40px,color-mix(in oklab,var(--a1) 45%,transparent) 40px,color-mix(in oklab,var(--a1) 45%,transparent) 42px,transparent 42px),linear-gradient(color-mix(in oklab,var(--ink) 11%,transparent) 1px,transparent 1px),linear-gradient(90deg,color-mix(in oklab,var(--ink) 11%,transparent) 1px,transparent 1px);background-size:auto,22px 22px,22px 22px}
+html[data-voice=prokhor] body{background-image:repeating-linear-gradient(0deg,transparent 0 37px,color-mix(in oklab,var(--ink) 11%,transparent) 37px 39px,transparent 39px 61px,color-mix(in oklab,var(--ink) 6%,transparent) 61px 62px)}
+html[data-voice=tommazo] body{background-image:linear-gradient(90deg,color-mix(in oklab,var(--ink) 5%,transparent) 1px,transparent 1px);background-size:120px 100%}
 
-/* tabs */
-.tabs{display:flex;gap:6px;justify-content:center;margin:12px 0 22px;flex-wrap:wrap}
-.tabs button{
-  font:inherit;font-family:var(--f-head);font-size:15px;letter-spacing:.06em;
-  background:transparent;color:var(--muted);border:1px solid var(--line);
-  padding:7px 16px;border-radius:var(--radius);cursor:pointer
-}
-.tabs button[aria-selected=true]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+/* ---------- шапка ---------- */
+.head{position:relative;text-align:center;padding:20px 8px 14px}
+.head .clan{width:30px;height:30px;color:var(--a1now);display:block;margin:0 auto 8px}
+.head .epithet{font-family:var(--f-head);letter-spacing:.2em;text-transform:uppercase;font-size:12px;color:var(--muted);position:relative;z-index:1}
+.head .vname{color:var(--a1now);animation:ghostIn 4s ease-out both,flick 9s 4s infinite}
+@keyframes ghostIn{from{opacity:0;filter:blur(6px);letter-spacing:.6em}to{opacity:1;filter:none}}
+@keyframes flick{0%,92%,100%{opacity:1}94%{opacity:.2}96%{opacity:.8}}
+.head h1{position:relative;z-index:1;font-family:var(--f-head);font-weight:400;font-size:clamp(36px,9vw,58px);line-height:1.05;margin:8px 0 4px;color:var(--title)}
+.head .sub{position:relative;z-index:1;font-style:italic;color:var(--muted);font-size:15px}
+.head .mark{position:absolute;left:50%;top:50%;width:170px;height:170px;transform:translate(-50%,-30%);opacity:.16;pointer-events:none}
+.head .late-line{display:none;font-family:var(--f-card);font-style:italic;color:var(--a2p);margin-top:8px;animation:flick 6s infinite}
+html[data-late] .head .late-line{display:block}
+
+/* знак секты */
+.sym path,.sym line,.sym circle{fill:none;stroke:currentColor;stroke-width:5;stroke-linecap:round;stroke-linejoin:round}
+.sym .arc{stroke:color-mix(in oklab,var(--ink) 55%,transparent)}
+.sym .arc.lit{stroke:var(--a2p);stroke-width:7}
+.sym .dot{fill:var(--a1now);stroke:none}
+html[data-night="4"] .sym .arc.lit{filter:drop-shadow(0 0 4px var(--a2))}
+.head .mark .arc.lit{stroke-width:8}
+.symbox{display:grid;grid-template-columns:120px 1fr;gap:16px;align-items:center}
+.symbox .sym{width:120px;height:120px;color:var(--ink)}
+.steps{display:flex;gap:10px;margin-top:10px}
+.steps figure{margin:0;text-align:center;font-size:12px;color:var(--muted)}
+.steps .sym{width:46px;height:46px}
+.steps .sym *{animation:none}
+@media (max-width:480px){.symbox{grid-template-columns:1fr;justify-items:center;text-align:center}.steps{justify-content:center}}
+
+/* ---------- вкладки ---------- */
+.tabs{display:flex;gap:6px;justify-content:center;margin:10px 0 22px;flex-wrap:wrap;position:relative;z-index:1}
+.tabs button{font:inherit;font-family:var(--f-head);font-size:15px;letter-spacing:.06em;background:var(--paper);color:var(--muted);border:1px solid var(--line);padding:7px 16px;border-radius:var(--radius);cursor:pointer}
+.tabs button[aria-selected=true]{background:var(--a1now);color:#fff;border-color:var(--a1now)}
+html[data-voice=lane] .tabs button{font-size:20px}
 .tab{display:none}.tab.on{display:block;animation:fade .5s ease}
 @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1}}
 
-/* panels */
-.panel{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:20px 20px;margin:0 0 16px;box-shadow:var(--shadow);position:relative}
+/* ---------- панели и разъезжающиеся рамки ---------- */
+.panel{position:relative;background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:20px;margin:0 0 18px;
+  transform:rotate(calc(var(--drift)*var(--r,0)*1deg));transition:transform 1.2s}
+.panel>.frame{position:absolute;inset:-1px;border:1px solid var(--a1now);border-radius:inherit;pointer-events:none;
+  opacity:calc(.12 + var(--k)*.55);
+  transform:translate(calc(var(--split)*var(--sx,1)*1px),calc(var(--split)*var(--sy,-.7)*1px)) rotate(calc(var(--split)*var(--r,0)*.25deg))}
 .panel h2{font-family:var(--f-head);font-weight:400;font-size:22px;margin:0 0 10px;color:var(--title)}
 .panel h3{font-family:var(--f-head);font-weight:400;font-size:18px;margin:16px 0 6px;color:var(--title)}
 .panel p{margin:0 0 10px}
-.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:6px 0 4px}
-.kv dt{color:var(--muted);font-size:14px;padding-top:2px}
-.kv dd{margin:0}
-.arch{border-left:3px solid var(--accent);padding:4px 0 4px 12px;margin:10px 0}
-.arch b{font-family:var(--f-head);font-weight:400;font-size:18px;color:var(--title)}
+html[data-voice=lane] .panel h2,html[data-voice=lane] .panel h3{font-size:26px}
+html[data-voice=prokhor] .panel h2{font-size:20px}
+.arch{border-left:3px solid var(--a1now);padding:4px 0 4px 12px;margin:10px 0}
+.arch .lbl{color:var(--muted);font-size:13px}
+.arch b{font-family:var(--f-head);font-weight:400;font-size:19px;color:var(--title)}
 .arch p{margin:4px 0 0;font-size:15px}
-.tags{font-size:13px;color:var(--muted);margin-top:4px}
-ul.clean{margin:6px 0 0;padding-left:20px}
-ul.clean li{margin:0 0 6px}
+ul.clean{margin:6px 0 0;padding-left:20px}ul.clean li{margin:0 0 6px}
+blockquote{margin:0 0 14px;padding:0 0 0 14px;border-left:2px solid color-mix(in oklab,var(--a1now) 60%,transparent);font-style:italic}
+blockquote:last-child{margin-bottom:0}
 
-/* empty state */
-.empty{text-align:center;padding:46px 18px;font-family:var(--f-head);font-size:22px;line-height:1.5;color:var(--muted)}
-.empty .glyph{font-size:34px;display:block;margin-bottom:12px;opacity:.7;animation:breathe 5s ease-in-out infinite}
-@keyframes breathe{50%{opacity:.25;transform:scale(.96)}}
-
-/* fragments */
-.frag{margin:0 0 16px}
+/* ---------- осколки ---------- */
+.sec{text-align:center;margin:26px 0 14px}
+.sec .ep{font-family:var(--f-head);font-size:13px;letter-spacing:.24em;text-transform:uppercase;color:var(--muted)}
+.sec .t{font-family:var(--f-head);font-size:26px;color:var(--title);line-height:1.1}
+html[data-voice=lane] .sec .t{font-size:34px}
+.sec .n{font-size:12px;color:var(--muted);letter-spacing:.14em}
 .frag .meta{display:flex;justify-content:space-between;gap:8px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
 .frag .card{font-family:var(--f-card);font-size:19px;line-height:1.45;color:var(--title)}
-.frag .full{margin-top:12px}
-.frag details summary{cursor:pointer;color:var(--accent);font-size:15px;list-style:none}
+html[data-voice=lane] .frag .card{font-size:25px;line-height:1.25}
+html[data-voice=prokhor] .frag .card{font-style:italic}
+.frag details summary{cursor:pointer;color:var(--a1now);font-size:15px;list-style:none;margin-top:12px}
 .frag details summary::-webkit-details-marker{display:none}
-.frag details summary::before{content:"▸ "}
-.frag details[open] summary::before{content:"▾ "}
+.frag details summary::before{content:"▸ "}.frag details[open] summary::before{content:"▾ "}
 .frag .text{white-space:pre-wrap;margin-top:10px;font-size:16px}
 .frag audio{width:100%;margin-top:12px}
-.frag.new{outline:2px solid var(--accent);outline-offset:3px}
-.frag.new .meta::after{content:"новое";color:var(--accent)}
-.sec-title{font-family:var(--f-head);font-size:14px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);text-align:center;margin:26px 0 12px}
+.frag.new .panel{box-shadow:0 0 0 2px var(--a2p),0 0 22px color-mix(in oklab,var(--a2p) 35%,transparent)}
+.frag.new .meta::after{content:"новое";color:var(--a2p)}
 
-/* rules */
+/* пустота */
+.empty{text-align:center;padding:46px 18px;font-family:var(--f-head);font-size:22px;line-height:1.5;color:var(--muted)}
+html[data-voice=lane] .empty{font-size:30px}
+.empty .sym{width:64px;height:64px;display:block;margin:0 auto 14px;color:var(--muted);animation:breathe 5s ease-in-out infinite}
+@keyframes breathe{50%{opacity:.35;transform:scale(.95)}}
+
+/* ---------- разметка в текстах ---------- */
+s{text-decoration-color:var(--a1now);text-decoration-thickness:2px;opacity:.6}
+ins{text-decoration:none;font-family:'Caveat',cursive;color:var(--a1now);font-size:1.12em;position:relative;top:-.45em;margin-left:3px}
+mark.hid{background:transparent;color:color-mix(in oklab,var(--paper) 93%,var(--ink));cursor:text;transition:color .4s,background .4s}
+mark.hid::selection{background:var(--a1now);color:#fff}
+mark.hid.shown{background:var(--a1now);color:#fff}
+.redact{background:var(--ink);color:transparent;border-radius:1px;user-select:none;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.hidline{text-align:center;font-family:var(--f-card);font-style:italic;margin:6px 0 0}
+
+/* ---------- безумие ---------- */
+.w{white-space:nowrap}
+.ch{display:inline-block;transition:transform .6s}
+.ch.g{animation:gl .4s steps(2) both;color:var(--a2p)}
+@keyframes gl{0%{transform:translate(2px,-1px) skewX(25deg)}50%{transform:translate(-2px,1px);opacity:.35}100%{transform:none}}
+.ch.m{transform:scaleX(-1)}
+.whisper{position:fixed;z-index:0;pointer-events:none;font-family:var(--f-card);font-style:italic;font-size:15px;color:var(--a2p);opacity:0;white-space:nowrap;animation:wh 6s ease-in-out forwards}
+@keyframes wh{0%{opacity:0;transform:translateY(6px);filter:blur(2px)}35%,65%{opacity:.55;transform:none;filter:none}100%{opacity:0;filter:blur(3px)}}
+.blot{position:absolute;pointer-events:none;border-radius:52% 44% 57% 41%/45% 55% 43% 57%;background:var(--blot);opacity:.7}
+.blot.s{border-radius:50%}
+.drip{position:absolute;top:-1px;width:4px;border-radius:0 0 4px 4px;background:var(--drip);pointer-events:none;animation:drip 6s ease-in both}
+@keyframes drip{from{height:0}}
+
+/* ---------- фишки голосов ---------- */
+/* Евфимий: буквица, листы, дролери */
+html[data-voice=euthymius] .panel{border-left:3px double color-mix(in oklab,var(--a1now) 60%,transparent)}
+html[data-voice=euthymius] .frag .card .ch.cap{float:left;font-size:3.1em;line-height:.85;padding:4px 8px 0 0;color:var(--a1now)}
+html[data-night="3"][data-voice=euthymius] .frag .card .ch.cap,html[data-night="4"][data-voice=euthymius] .frag .card .ch.cap{color:var(--a2p)}
+html[data-voice=euthymius] .frag .card > .w:first-child{white-space:normal}
+.folio{font-style:italic;text-transform:none;letter-spacing:0;font-size:13px}
+.drol{position:absolute;width:38px;height:30px;color:var(--a1now);opacity:.85;pointer-events:none}
+.drol *{fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+
+/* Ашме: обожжённые края, лепестки, угли */
+html[data-voice=ashme] .panel{box-shadow:inset 0 0 22px color-mix(in oklab,#5a2a10 28%,transparent),inset 0 0 3px color-mix(in oklab,#3a1a0a 35%,transparent)}
+.sky{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.petal{position:absolute;top:-14px;width:10px;height:7px;border-radius:70% 0;background:color-mix(in oklab,var(--a1) 60%,#e88aa0);opacity:.8;animation:fall linear infinite}
+.ember{position:absolute;bottom:-6px;width:3px;height:3px;border-radius:50%;background:var(--a2);box-shadow:0 0 7px var(--a2);animation:rise linear infinite}
+@keyframes fall{to{transform:translate(60px,110vh) rotate(540deg)}}
+@keyframes rise{to{transform:translate(-30px,-70vh);opacity:0}}
+
+/* Лане: скотч и каракули */
+html[data-voice=lane] .panel::before,html[data-voice=lane] .panel::after{content:"";position:absolute;top:-9px;width:62px;height:18px;background:rgba(255,244,190,.62);box-shadow:0 1px 1px rgba(0,0,0,.06)}
+html[data-voice=lane] .panel::before{left:18px;transform:rotate(-5deg)}
+html[data-voice=lane] .panel::after{right:18px;transform:rotate(4deg)}
+.doodle{position:absolute;pointer-events:none;font-family:'Caveat',cursive;line-height:1}
+.doodle svg *{fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round}
+
+/* Прохор: копоть, золото, воск */
+html[data-voice=prokhor] .panel{border-top:4px solid color-mix(in oklab,var(--ink) 85%,transparent)}
+html[data-voice=prokhor] .head h1,html[data-voice=prokhor] .panel h2,html[data-voice=prokhor] .sec .t{color:color-mix(in oklab,var(--a2) calc(40% + var(--p2)*35%),var(--ink))}
+html[data-voice=prokhor] .head h1{letter-spacing:.04em;text-shadow:0 1px 0 color-mix(in oklab,var(--a2) 40%,transparent)}
+.soot{position:absolute;width:26px;height:32px;border-radius:48% 52% 45% 55%;background:repeating-radial-gradient(ellipse at 50% 60%,color-mix(in oklab,var(--blot) 55%,transparent) 0 1px,transparent 1px 3.2px);opacity:.55;pointer-events:none}
+.wax{position:absolute;top:-4px;width:9px;border-radius:0 0 6px 6px;background:var(--drip);box-shadow:inset -2px 0 0 rgba(0,0,0,.08),0 1px 1px rgba(0,0,0,.08);pointer-events:none}
+
+/* Томмазо: протокол, печать, штамп */
+html[data-voice=tommazo] .panel{background-image:repeating-linear-gradient(transparent 0 27px,color-mix(in oklab,var(--ink) 7%,transparent) 27px 28px)}
+html[data-voice=tommazo] .head h1{font-variant:small-caps;letter-spacing:.06em}
+html[data-voice=tommazo] .frag .panel{padding-right:52px}
+.seal{position:absolute;right:14px;top:-12px;width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#c23a2c,#7a1414 70%);box-shadow:0 1px 2px rgba(0,0,0,.35)}
+.stamp{position:absolute;right:12px;bottom:12px;border:2px solid var(--a1now);color:var(--a1now);font:700 12px 'EB Garamond',serif;letter-spacing:.16em;padding:1px 7px;transform:rotate(-11deg);opacity:.78;pointer-events:none}
+
+/* ---------- правила, подвал ---------- */
 table.rt{width:100%;border-collapse:collapse;font-size:15px;margin:8px 0}
-table.rt td,table.rt th{border-bottom:1px solid var(--line);padding:6px 6px;text-align:left;vertical-align:top}
+table.rt td,table.rt th{border-bottom:1px solid var(--line);padding:6px;text-align:left;vertical-align:top}
 table.rt th{font-weight:600;color:var(--muted);font-size:13px}
-.stop{font-family:var(--f-head);font-size:22px;color:var(--accent)}
-
-/* notice */
-.notice{border:1px dashed var(--accent);border-radius:var(--radius);padding:12px 16px;margin:0 0 18px;font-style:italic}
-
-/* footer */
-.foot{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:30px 0 8px}
+.stop{font-family:var(--f-head);font-size:24px;color:var(--a1now)}
+.notice{position:relative;z-index:1;border:1px dashed var(--a1now);border-radius:var(--radius);padding:12px 16px;margin:0 0 18px;font-style:italic;background:var(--paper)}
+.foot{position:relative;z-index:1;display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:30px 0 8px}
 .foot a{display:inline-flex;align-items:center;gap:6px;text-decoration:none;border:1px solid var(--line);background:var(--paper);color:var(--ink);padding:9px 14px;border-radius:var(--radius);font-size:15px}
-.foot a:hover{border-color:var(--accent);color:var(--accent)}
-.stamp{text-align:center;font-size:12px;color:var(--muted);margin-top:10px}
+.foot a:hover{border-color:var(--a1now);color:var(--a1now)}
+.stamp-time{position:relative;z-index:1;text-align:center;font-size:12px;color:var(--muted);margin-top:10px}
+.foot-clan{display:block;width:22px;height:22px;margin:16px auto 0;color:var(--muted);opacity:.7}
 .err{text-align:center;color:var(--muted);padding:40px}
 
-/* ===================== THEMES ===================== */
-
-/* Евфимий — рукопись, пергамент, киноварь */
-html[data-voice=euthymius]{
-  --bg:#d9c9a3;--bg-img:radial-gradient(ellipse at center,#efe2bf 0%,#e3d1a6 55%,#b99c68 100%);
-  --paper:rgba(248,239,214,.82);--ink:#2b1d0e;--title:#3a2410;--muted:#7a5f3d;--accent:#a3231a;--on-accent:#f8efd6;
-  --line:rgba(90,60,25,.28);--radius:2px;--shadow:0 1px 0 rgba(0,0,0,.05),inset 0 0 40px rgba(140,100,40,.12);
-  --f-head:'Old Standard TT',serif;--f-body:'Old Standard TT',serif;--f-card:'Old Standard TT',serif;
-}
-html[data-voice=euthymius] .panel{border-left:3px double rgba(163,35,26,.55)}
-html[data-voice=euthymius] .frag .card::first-letter{float:left;font-size:3.1em;line-height:.85;padding:4px 8px 0 0;color:#a3231a}
-
-/* Ашме — сад пепла, угли, лепестки */
-html[data-voice=ashme]{
-  --bg:#130e0c;--bg-img:radial-gradient(circle at 20% 110%,rgba(224,116,58,.22),transparent 45%),radial-gradient(circle at 85% -10%,rgba(201,86,107,.16),transparent 40%),linear-gradient(#1a1210,#0e0a09);
-  --paper:rgba(34,24,21,.78);--ink:#e8dccd;--title:#f2c9a4;--muted:#a48b78;--accent:#e0743a;--on-accent:#1a1210;
-  --line:rgba(224,116,58,.25);--radius:14px;--shadow:0 0 0 1px rgba(0,0,0,.4),0 10px 40px rgba(0,0,0,.5),inset 0 -20px 40px rgba(224,116,58,.05);
-  --f-head:'Forum',serif;--f-body:'Literata',serif;--f-card:'Forum',serif;
-}
-html[data-voice=ashme] body::before{content:"";position:fixed;inset:0;pointer-events:none;
-  background-image:radial-gradient(2px 2px at 12% 80%,#ff9a52aa,transparent),radial-gradient(1.5px 1.5px at 70% 60%,#ff7a3a88,transparent),radial-gradient(2px 2px at 40% 92%,#ffb07088,transparent),radial-gradient(1px 1px at 88% 30%,#c9566b99,transparent);
-  animation:embers 9s linear infinite}
-@keyframes embers{from{transform:translateY(0)}to{transform:translateY(-40px);opacity:.4}}
-
-/* Лане — тетрадь в клетку, цветные карандаши */
-html[data-voice=lane]{
-  --bg:#fbfaf3;--bg-img:linear-gradient(90deg,transparent 46px,rgba(220,80,80,.45) 46px,rgba(220,80,80,.45) 48px,transparent 48px),linear-gradient(rgba(80,120,190,.16) 1px,transparent 1px),linear-gradient(90deg,rgba(80,120,190,.16) 1px,transparent 1px);
-  --paper:rgba(255,255,250,.86);--ink:#2a3550;--title:#1f3f8a;--muted:#6b7590;--accent:#d2452f;--on-accent:#fff;
-  --line:rgba(42,53,80,.2);--radius:6px;--shadow:2px 3px 0 rgba(42,53,80,.08);
-  --f-head:'Caveat',cursive;--f-body:'PT Sans',sans-serif;--f-card:'Caveat',cursive;
-}
-html[data-voice=lane] body{background-size:auto,22px 22px,22px 22px}
-html[data-voice=lane] .head h1{transform:rotate(-1.5deg)}
-html[data-voice=lane] .frag .card{font-size:25px;line-height:1.25}
-html[data-voice=lane] .panel h2,html[data-voice=lane] .panel h3{font-size:26px}
-html[data-voice=lane] .tabs button{font-size:20px}
-html[data-voice=lane] .frag:nth-child(3n+1) .panel{transform:rotate(-.4deg)}
-html[data-voice=lane] .frag:nth-child(3n+2) .panel{transform:rotate(.35deg)}
-html[data-voice=lane] .empty{font-size:30px}
-
-/* Прохор — береста, снег, копоть */
-html[data-voice=prokhor]{
-  --bg:#e9e6dd;--bg-img:repeating-linear-gradient(0deg,transparent 0 37px,rgba(40,35,30,.10) 37px 39px,transparent 39px 61px,rgba(40,35,30,.06) 61px 62px),linear-gradient(180deg,#f3f1ea,#dcd8cc);
-  --paper:rgba(250,249,244,.86);--ink:#262422;--title:#1d1b19;--muted:#6e6860;--accent:#8a2a1e;--on-accent:#f8f6f0;
-  --line:rgba(30,28,25,.22);--radius:3px;--shadow:0 2px 0 rgba(30,28,25,.12);
-  --f-head:'Ruslan Display',serif;--f-body:'PT Serif',serif;--f-card:'PT Serif',serif;
-}
-html[data-voice=prokhor] .panel{border-top:4px solid #2b2724}
-html[data-voice=prokhor] .head h1{letter-spacing:.04em}
-html[data-voice=prokhor] .frag .card{font-style:italic}
-html[data-voice=prokhor] .panel h2{font-size:20px}
-
-/* Томмазо — протокол трибунала, сургуч */
-html[data-voice=tommazo]{
-  --bg:#ece7dc;--bg-img:linear-gradient(180deg,#f2eee5,#e2dccd);
-  --paper:rgba(252,250,245,.92);--ink:#1f1b16;--title:#1f1b16;--muted:#6f665a;--accent:#8e1b1b;--on-accent:#fbf7ef;
-  --line:rgba(31,27,22,.22);--radius:0;--shadow:0 1px 3px rgba(0,0,0,.12);
-  --f-head:'EB Garamond',serif;--f-body:'EB Garamond',serif;--f-card:'EB Garamond',serif;
-}
-html[data-voice=tommazo] .panel{background-image:repeating-linear-gradient(transparent 0 27px,rgba(31,27,22,.07) 27px 28px)}
-html[data-voice=tommazo] .head h1{font-variant:small-caps;letter-spacing:.06em}
-html[data-voice=tommazo] .frag{counter-increment:fr}
-html[data-voice=tommazo] .frag .meta::before{content:"Лист " counter(fr);}
-html[data-voice=tommazo] .frag .panel::after{content:"";position:absolute;right:14px;top:-12px;width:34px;height:34px;border-radius:50%;
-  background:radial-gradient(circle at 35% 35%,#c23a2c,#7a1414 70%);box-shadow:0 1px 2px rgba(0,0,0,.35)}
-
-@media (max-width:480px){
-  body{font-size:16px}
-  .panel{padding:16px 14px}
-  .kv{grid-template-columns:1fr}
-  .kv dt{padding-top:6px}
-}
+@media (max-width:480px){body{font-size:16px}.panel{padding:16px 14px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}.sky,.whisper{display:none}}

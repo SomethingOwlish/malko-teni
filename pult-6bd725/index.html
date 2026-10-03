@@ -2,73 +2,111 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#141216">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <title>Пульт Малкавиан</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&family=Forum&display=swap">
 <style>
-:root{--bg:#141216;--panel:#1e1b21;--line:#34303a;--ink:#e9e4ee;--muted:#9a93a3;--acc:#b98cff;--ok:#7fd49a;--bad:#ff8a7a}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 'PT Sans',sans-serif}
-.top{position:sticky;top:0;z-index:5;background:rgba(20,18,22,.96);border-bottom:1px solid var(--line);padding:10px 16px}
-.top .in{max-width:1100px;margin:0 auto;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-h1{font:400 24px Forum,serif;margin:0 auto 0 0;letter-spacing:.04em}
-.wrap{max-width:1100px;margin:0 auto;padding:16px}
-.btn{font:inherit;border:1px solid var(--acc);background:var(--acc);color:#1a1020;padding:8px 14px;border-radius:8px;cursor:pointer;text-decoration:none;display:inline-block}
+:root{--bg:#141216;--panel:#1e1b21;--field:#151318;--line:#34303a;--ink:#e9e4ee;--muted:#9a93a3;--acc:#c56a85;--acc2:#b98cff;--ok:#7fd49a;--bad:#ff8a7a}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 'PT Sans',sans-serif;padding-bottom:env(safe-area-inset-bottom)}
+h1{font:400 22px Forum,serif;margin:0;letter-spacing:.04em}
+h2{font:400 21px Forum,serif;margin:0 0 8px}
+a{color:var(--acc2)}
+.top{position:sticky;top:0;z-index:5;background:rgba(20,18,22,.97);border-bottom:1px solid var(--line);padding:calc(8px + env(safe-area-inset-top)) 12px 8px}
+.top .in{max-width:1100px;margin:0 auto;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.top h1{margin-right:auto}
+.badge{font-size:12px;border:1px solid var(--line);border-radius:20px;padding:2px 9px;color:var(--muted)}
+.wrap{max-width:1100px;margin:0 auto;padding:12px}
+.btn{font:inherit;border:1px solid var(--acc);background:var(--acc);color:#1a0d12;padding:9px 14px;border-radius:9px;cursor:pointer;text-decoration:none;display:inline-block;min-height:42px}
 .btn.ghost{background:transparent;color:var(--acc)}
-.status{font-size:14px;color:var(--muted);width:100%}.status.ok{color:var(--ok)}.status.bad{color:var(--bad)}
-details.set{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:14px}
-details.set summary{cursor:pointer;color:var(--muted)}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px}
-label{display:block;color:var(--muted);font-size:13px;margin:8px 0}
-input,select,textarea{display:block;width:100%;margin-top:4px;font:inherit;color:var(--ink);background:#151318;border:1px solid var(--line);border-radius:6px;padding:7px 9px}
+.btn.small{min-height:34px;padding:5px 10px;font-size:14px}
+.btn:disabled{opacity:.5}
+.status{font-size:14px;color:var(--muted);width:100%;min-height:1em}.status.ok{color:var(--ok)}.status.bad{color:var(--bad)}
+label{display:block;color:var(--muted);font-size:13px;margin:10px 0}
+input,select,textarea{display:block;width:100%;margin-top:4px;font:inherit;font-size:16px;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:8px;padding:9px 10px}
 textarea{resize:vertical}
-input[type=checkbox]{display:inline;width:auto;margin:0 6px 0 0;accent-color:var(--acc)}
-.chk{display:inline-flex;align-items:center;color:var(--ink);font-size:14px;margin:4px 0}
-.chk.big{font-weight:700;white-space:nowrap}
-#tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
-#tabs button{font:inherit;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 14px;cursor:pointer;text-align:left}
+input[type=checkbox]{display:inline;width:20px;height:20px;margin:0 8px 0 0;accent-color:var(--acc);vertical-align:middle}
+.chk{display:inline-flex;align-items:center;color:var(--ink);font-size:15px;margin:6px 14px 6px 0;min-height:32px}
+.chk.big{font-weight:700}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:10px;scrollbar-width:none}
+#tabs::-webkit-scrollbar{display:none}
+#tabs button{flex:0 0 auto;font:inherit;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:8px 13px;cursor:pointer;text-align:left}
 #tabs button small{display:block;color:var(--muted);font-size:12px}
 #tabs button.cur{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc) inset}
-.box{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:14px}
-.box h2{font:400 21px Forum,serif;margin:0 0 8px}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
 .pagehead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
-.item{display:grid;grid-template-columns:120px 1fr;gap:12px;border-top:1px solid var(--line);padding:12px 0;opacity:.62}
+.item{display:grid;grid-template-columns:120px 1fr;gap:10px;border-top:1px solid var(--line);padding:12px 0;opacity:.6}
 .item.on{opacity:1}.item.on .ititle b{color:var(--acc)}
-.ititle{margin-bottom:4px}.icard{font-size:15px}
+.icard{font-size:15px}
 .iopts{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;align-items:center;margin-top:6px}
 .iopts input[type=url]{margin:0}.iopts details{grid-column:1/-1;color:var(--muted)}
-.ftext{white-space:pre-wrap;font-size:14px;color:var(--ink);background:#151318;border-radius:6px;padding:10px;margin-top:6px;max-height:320px;overflow:auto}
+.ftext{white-space:pre-wrap;font-size:14px;color:var(--ink);background:var(--field);border-radius:8px;padding:10px;margin-top:6px;max-height:320px;overflow:auto}
 .pill{font-size:11px;border:1px solid var(--line);border-radius:20px;padding:1px 7px;color:var(--muted)}.pill.g{border-color:var(--ok);color:var(--ok)}
-.extra{border-top:1px solid var(--line);padding:10px 0}
-.row.link{display:grid;grid-template-columns:140px 1fr 2fr;gap:10px;align-items:center;margin:6px 0}
-.row.link input{margin:0}
-.muted{color:var(--muted)}.urls{padding-left:18px}.urls a{color:var(--acc);word-break:break-all}
-@media (max-width:700px){.grid2,.grid4,.row.link{grid-template-columns:1fr}.item{grid-template-columns:1fr}.iopts{grid-template-columns:1fr}}
+.row.link{display:grid;grid-template-columns:140px 1fr 2fr;gap:10px;align-items:center;margin:6px 0}.row.link input{margin:0}
+.muted{color:var(--muted)}.urls{padding-left:18px}.urls a{word-break:break-all}
+code{background:var(--field);border-radius:4px;padding:1px 5px;color:var(--acc2)}
+.nightsel{display:flex;align-items:center;gap:6px;margin:0;color:var(--ink);font-size:14px}.nightsel select{width:auto;margin:0;padding:6px 8px}
+.ev{border-top:1px solid var(--line);padding:10px 0}
+.ev .who{font-size:13px;color:var(--muted)}
+.ev .acts{display:flex;gap:8px;margin-top:6px}
+.login{max-width:420px;margin:12vh auto 0;padding:0 16px}
+.login .box{padding:20px}
+.hide{display:none!important}
+@media (max-width:700px){.grid2,.row.link{grid-template-columns:1fr}.item{grid-template-columns:1fr}.iopts{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-<div class="top"><div class="in">
-  <h1>Пульт · Малкавиан</h1>
-  <button class="btn ghost" id="reload">Перечитать с сайта</button>
-  <button class="btn" id="publish">Опубликовать</button>
-  <div id="status" class="status"></div>
-</div></div>
-<div class="wrap">
-  <details class="set"><summary>Настройки: GitHub и библиотека текстов</summary>
-    <div class="grid4">
-      <label>Владелец (логин)<input id="gh-owner" placeholder="argentum"></label>
-      <label>Репозиторий<input id="gh-repo" placeholder="malk-cards"></label>
-      <label>Ветка<input id="gh-branch" placeholder="main"></label>
-      <label>Токен (fine-grained, Contents: write)<input id="gh-token" type="password" placeholder="github_pat_…"></label>
-    </div>
-    <label>Библиотека текстов (library.json — хранится только у тебя)<input id="libfile" type="file" accept=".json,application/json"></label>
-    <p class="muted" id="libstate"></p>
-    <p class="muted">Токен и библиотека сохраняются только в этом браузере. <button class="btn ghost" id="forget">Забыть всё на этом устройстве</button></p>
-  </details>
-  <nav id="tabs"></nav>
-  <main id="main"></main>
+
+<div id="loginView" class="login hide">
+  <h1 style="text-align:center;margin-bottom:16px">Пульт · Малкавиан</h1>
+  <div class="box">
+    <label>Пароль<input id="pw" type="password" autocomplete="current-password" enterkeyhint="go"></label>
+    <label class="chk"><input type="checkbox" id="remember" checked> запомнить на этом устройстве</label>
+    <button class="btn" id="loginBtn" style="width:100%">Войти</button>
+    <div class="status" id="loginStatus"></div>
+  </div>
+  <p class="muted" style="text-align:center;font-size:14px"><a href="#" id="toSetup">Первичная настройка ключей</a></p>
 </div>
+
+<div id="setupView" class="wrap hide" style="max-width:640px">
+  <div class="box">
+    <h2>Ключи доступа</h2>
+    <p class="muted">Делается один раз с любого устройства. Токен GitHub шифруется паролями и сохраняется в репозитории, дальше вход только по паролю — с телефона тоже.</p>
+    <div class="grid2">
+      <label>Логин на GitHub<input id="s-owner" autocapitalize="off"></label>
+      <label>Репозиторий<input id="s-repo" autocapitalize="off"></label>
+    </div>
+    <label>Ветка<input id="s-branch" value="main" autocapitalize="off"></label>
+    <label>Токен GitHub (fine-grained, Contents: Read and write)<input id="s-token" type="password" autocapitalize="off" placeholder="github_pat_…"></label>
+    <label>Пароль координатора — всё: осколки, ночь, ссылки, ключи<input id="s-pc" type="password" autocomplete="new-password"></label>
+    <label>Пароль мастеров — только вкидывать видения и ивенты<input id="s-pm" type="password" autocomplete="new-password"></label>
+    <label>Библиотека текстов library.json <span id="s-libstate"></span><input id="s-lib" type="file" accept=".json,application/json"></label>
+    <button class="btn" id="setupBtn">Зашифровать и сохранить</button>
+    <button class="btn ghost" id="setupCancel">Назад</button>
+    <div class="status" id="setupStatus"></div>
+  </div>
+</div>
+
+<div id="appView" class="hide">
+  <div class="top"><div class="in">
+    <h1>Пульт</h1>
+    <span class="badge" id="roleBadge"></span>
+    <label class="nightsel coord-only">Ночь <select id="night"><option value="0">до игры</option><option value="1">N1</option><option value="2">N2</option><option value="3">N3</option><option value="4">N4</option></select></label>
+    <button class="btn coord-only" id="publish">Опубликовать</button>
+    <button class="btn ghost small" id="logout">Выйти</button>
+    <div id="status" class="status"></div>
+  </div></div>
+  <div class="wrap">
+    <nav id="tabs"></nav>
+    <main id="main"></main>
+  </div>
+</div>
+
 <script>window.MALK_PLAYERS = [{"id": "grek", "slug": "codex-d46e", "voice": "euthymius", "title": "Грек"}, {"id": "velen", "slug": "most-0996", "voice": "lane", "title": "Велен"}, {"id": "alisa", "slug": "bosoy-836b", "voice": "prokhor", "title": "Алиса"}, {"id": "vorobeika", "slug": "hortus-880c", "voice": "ashme", "title": "Воробейка"}, {"id": "fifth", "slug": "processus-b335", "voice": "tommazo", "title": "Пятый"}];</script>
 <script src="../assets/cms.js"></script>
 </body>
