@@ -201,6 +201,12 @@ html[data-voice=tommazo] .frag .panel{padding-right:52px}
 .stamp{position:absolute;right:12px;bottom:12px;border:2px solid var(--a1now);color:var(--a1now);font:700 12px 'EB Garamond',serif;letter-spacing:.16em;padding:1px 7px;transform:rotate(-11deg);opacity:.78;pointer-events:none}
 
 /* ---------- правила, подвал ---------- */
+#t-rules .panel{transform:none}
+.fullrules summary{cursor:pointer;font-family:var(--f-head);font-size:20px;color:var(--a1now);list-style:none;text-align:center}
+.fullrules summary::-webkit-details-marker{display:none}
+.fullrules summary::before{content:"▸ "}.fullrules[open] summary::before{content:"▾ "}
+.fullrules[open] summary{margin-bottom:12px}
+.fulltext{font-size:15px}.fulltext h3{margin-top:18px}
 table.rt{width:100%;border-collapse:collapse;font-size:15px;margin:8px 0}
 table.rt td,table.rt th{border-bottom:1px solid var(--line);padding:6px;text-align:left;vertical-align:top}
 table.rt th{font-weight:600;color:var(--muted);font-size:13px}

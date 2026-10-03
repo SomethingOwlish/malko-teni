@@ -55,25 +55,32 @@
     const j = await r.json();
     return { data: JSON.parse(fromB64(j.content)), sha: j.sha };
   }
+  /* GitHub несколько секунд после записи может отдавать старую версию файла — помним то, что записали сами */
+  const known = {};
   async function putFile(path, obj, sha, msg){
     const r = await api(path, { method:"PUT", body: JSON.stringify({ message:msg, content:utf8b64(JSON.stringify(obj, null, 1)), branch:S.branch, ...(sha?{sha}:{}) }) });
-    if(r.status === 409 || r.status === 422) return { conflict:true };
+    if(r.status === 409 || (r.status === 422 && /sha/i.test(await r.clone().text()))) return { conflict:true };
     if(!r.ok) throw new Error(`GitHub ${r.status} ${(await r.json().catch(()=>({}))).message||""}`);
-    return { sha:(await r.json()).content.sha };
+    const nsha = (await r.json()).content.sha;
+    known[path] = { sha:nsha, data:obj, t:Date.now() };
+    return { sha:nsha };
   }
   /* читать-изменить-записать с повтором: безопасно, когда правят несколько мастеров сразу */
   async function mutate(path, fn, msg){
-    for(let attempt=0; attempt<4; attempt++){
-      const { data, sha } = await getFile(path);
+    for(let attempt=0; attempt<5; attempt++){
+      let { data, sha } = await getFile(path);
+      const k = known[path];
+      if(attempt === 0 && k && sha !== k.sha && Date.now() - k.t < 180000){ data = k.data; sha = k.sha; }
       const before = JSON.stringify(data);
       const next = fn(data ? JSON.parse(before) : null);
       if(next == null || JSON.stringify(next) === before) return data;
       next.updated = new Date().toISOString();
       const r = await putFile(path, next, sha, msg);
       if(!r.conflict){ remote[path] = next; return next; }
-      await new Promise(res => setTimeout(res, 600 + Math.random()*800));
+      delete known[path];
+      await new Promise(res => setTimeout(res, 1200 * (attempt + 1) + Math.random()*800));
     }
-    throw new Error("Кто-то правит этот файл одновременно с тобой. Попробуй ещё раз.");
+    throw new Error("GitHub ещё не обновился или кто-то правит этот файл одновременно. Подожди полминуты и нажми ещё раз.");
   }
 
   /* ================= данные ================= */
@@ -129,7 +136,8 @@
 
   async function loadRemote(){
     status("Читаю, что сейчас видят игроки…");
-    for(const p of PLAYERS){ const { data } = await getFile(pathOf(p)); remote[pathOf(p)] = data; }
+    for(const p of PLAYERS){ const path = pathOf(p); const { data, sha } = await getFile(path); const k = known[path];
+      remote[path] = (k && sha !== k.sha && Date.now() - k.t < 180000) ? k.data : data; }
     status("");
   }
 
@@ -190,6 +198,13 @@
     $("#tabs").innerHTML = tabs;
     $("#tabs").querySelectorAll("button").forEach(b => b.onclick = () => { cur = b.dataset.p; render(); });
 
+    if(coord){
+      const nb = document.getElementById("nightBar") || (() => { const d = document.createElement("div"); d.id = "nightBar"; d.className = "box nightbar"; $("#tabs").before(d); return d; })();
+      const pubN = +((Object.values(remote).find(Boolean)||{}).night||0);
+      nb.innerHTML = `<div class="nb-title">Ночь на карточках сейчас: <b>${["до игры","N1","N2","N3","N4"][pubN]}</b>${(+M.night||0)!==pubN?` → <b class="pend">${["до игры","N1","N2","N3","N4"][+M.night||0]}</b> после «Опубликовать»`:""}</div>
+        <div class="seg">${["до игры","N1","N2","N3","N4"].map((t,i)=>`<button data-n="${i}" class="${(+M.night||0)===i?"on":""}">${t}</button>`).join("")}</div>`;
+      nb.querySelectorAll("[data-n]").forEach(b => b.onclick = () => { M.night = +b.dataset.n; saveDraft(); render(); status("Ночь выбрана — нажми «Опубликовать».", "ok"); });
+    }
     if(cur === "_ev") return renderEvents();
     if(cur === "_links") return renderLinks();
     if(cur === "_keys") return renderKeys();
@@ -427,7 +442,7 @@
     $("#pw").onkeydown = e => { if(e.key === "Enter") go(); };
     $("#logout").onclick = () => { ["malk-session","malk-lib","malk-draft"].forEach(k => { ls.del(k); ss.del(k); }); location.reload(); };
     $("#publish").onclick = publish;
-    $("#night").onchange = e => { M.night = +e.target.value; saveDraft(); renderTabsOnly(); status("Ночь изменена — нажми «Опубликовать».", "ok"); };
+    $("#night").onchange = e => { M.night = +e.target.value; saveDraft(); render(); status("Ночь выбрана — нажми «Опубликовать».", "ok"); };
 
     S = ls.get("malk-session", null) || ss.get("malk-session");
     if(S){ LIB = ls.get("malk-lib", null) || ss.get("malk-lib"); S.name = ls.get("malk-name", S.name||""); startApp(); }
