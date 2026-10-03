@@ -1,10 +1,11 @@
 {
- "notice": "",
+ "night": 0,
+ "notice": "До игры осталось еще сколько-то там дней;\nА ты подписался на клановый созвон? ",
  "links": {
   "masters": {
    "label": "Мастера",
-   "url": "",
-   "show": false
+   "url": "https://t.me/DanubeShadows",
+   "show": true
   },
   "ilinka": {
    "label": "Илинка",
@@ -13,8 +14,8 @@
   },
   "chat": {
    "label": "Клановый чат",
-   "url": "",
-   "show": false
+   "url": "https://t.me/+CgI6All1FdFkNWIy",
+   "show": true
   }
  },
  "player": {
@@ -34,5 +35,6 @@
  },
  "fragments": [],
  "outcomes": [],
- "extra": []
+ "extra": [],
+ "updated": "2026-10-03T15:26:23.291Z"
 }
