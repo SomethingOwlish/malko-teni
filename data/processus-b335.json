@@ -1,0 +1,38 @@
+{
+ "notice": "",
+ "links": {
+  "masters": {
+   "label": "Мастера",
+   "url": "",
+   "show": false
+  },
+  "ilinka": {
+   "label": "Илинка",
+   "url": "https://t.me/SomethingOwlish",
+   "show": true
+  },
+  "chat": {
+   "label": "Клановый чат",
+   "url": "",
+   "show": false
+  }
+ },
+ "player": {
+  "character": "",
+  "voiceName": "фра Томмазо",
+  "showVoiceName": false,
+  "external": {
+   "name": "",
+   "text": ""
+  },
+  "internal": {
+   "name": "",
+   "text": ""
+  },
+  "notes": "",
+  "notice": ""
+ },
+ "fragments": [],
+ "outcomes": [],
+ "extra": []
+}

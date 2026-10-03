@@ -1,0 +1,38 @@
+{
+ "notice": "",
+ "links": {
+  "masters": {
+   "label": "Мастера",
+   "url": "",
+   "show": false
+  },
+  "ilinka": {
+   "label": "Илинка",
+   "url": "https://t.me/SomethingOwlish",
+   "show": true
+  },
+  "chat": {
+   "label": "Клановый чат",
+   "url": "",
+   "show": false
+  }
+ },
+ "player": {
+  "character": "Захария",
+  "voiceName": "брат Евфимий",
+  "showVoiceName": false,
+  "external": {
+   "name": "Реликвия",
+   "text": "Агнец. В тебе клан видит будущее, надежду и спасение. Ты сомневаешься в том, что тебе готовят, но не знаешь другой жизни. Немного наивен и точно знаешь: клан тебя не предаст."
+  },
+  "internal": {
+   "name": "",
+   "text": ""
+  },
+  "notes": "",
+  "notice": ""
+ },
+ "fragments": [],
+ "outcomes": [],
+ "extra": []
+}

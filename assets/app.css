@@ -1,0 +1,157 @@
+/* ===== Тени над Дунаем — карточки Малкавиан ===== */
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  min-height:100vh;
+  background:var(--bg);
+  background-image:var(--bg-img);
+  background-attachment:fixed;
+  color:var(--ink);
+  font-family:var(--f-body);
+  font-size:17px;line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:var(--accent)}
+.wrap{max-width:720px;margin:0 auto;padding:28px 16px 40px}
+
+/* header */
+.head{position:relative;text-align:center;padding:26px 8px 18px}
+.head .epithet{font-family:var(--f-head);letter-spacing:.18em;text-transform:uppercase;font-size:12px;color:var(--muted)}
+.head h1{font-family:var(--f-head);font-weight:400;font-size:clamp(34px,8vw,54px);line-height:1.05;margin:10px 0 6px;color:var(--title)}
+.head .sub{font-style:italic;color:var(--muted);font-size:15px}
+.head .sigil{width:64px;height:64px;margin:0 auto 6px;display:block}
+
+/* tabs */
+.tabs{display:flex;gap:6px;justify-content:center;margin:12px 0 22px;flex-wrap:wrap}
+.tabs button{
+  font:inherit;font-family:var(--f-head);font-size:15px;letter-spacing:.06em;
+  background:transparent;color:var(--muted);border:1px solid var(--line);
+  padding:7px 16px;border-radius:var(--radius);cursor:pointer
+}
+.tabs button[aria-selected=true]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.tab{display:none}.tab.on{display:block;animation:fade .5s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1}}
+
+/* panels */
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:20px 20px;margin:0 0 16px;box-shadow:var(--shadow);position:relative}
+.panel h2{font-family:var(--f-head);font-weight:400;font-size:22px;margin:0 0 10px;color:var(--title)}
+.panel h3{font-family:var(--f-head);font-weight:400;font-size:18px;margin:16px 0 6px;color:var(--title)}
+.panel p{margin:0 0 10px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:6px 0 4px}
+.kv dt{color:var(--muted);font-size:14px;padding-top:2px}
+.kv dd{margin:0}
+.arch{border-left:3px solid var(--accent);padding:4px 0 4px 12px;margin:10px 0}
+.arch b{font-family:var(--f-head);font-weight:400;font-size:18px;color:var(--title)}
+.arch p{margin:4px 0 0;font-size:15px}
+.tags{font-size:13px;color:var(--muted);margin-top:4px}
+ul.clean{margin:6px 0 0;padding-left:20px}
+ul.clean li{margin:0 0 6px}
+
+/* empty state */
+.empty{text-align:center;padding:46px 18px;font-family:var(--f-head);font-size:22px;line-height:1.5;color:var(--muted)}
+.empty .glyph{font-size:34px;display:block;margin-bottom:12px;opacity:.7;animation:breathe 5s ease-in-out infinite}
+@keyframes breathe{50%{opacity:.25;transform:scale(.96)}}
+
+/* fragments */
+.frag{margin:0 0 16px}
+.frag .meta{display:flex;justify-content:space-between;gap:8px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.frag .card{font-family:var(--f-card);font-size:19px;line-height:1.45;color:var(--title)}
+.frag .full{margin-top:12px}
+.frag details summary{cursor:pointer;color:var(--accent);font-size:15px;list-style:none}
+.frag details summary::-webkit-details-marker{display:none}
+.frag details summary::before{content:"▸ "}
+.frag details[open] summary::before{content:"▾ "}
+.frag .text{white-space:pre-wrap;margin-top:10px;font-size:16px}
+.frag audio{width:100%;margin-top:12px}
+.frag.new{outline:2px solid var(--accent);outline-offset:3px}
+.frag.new .meta::after{content:"новое";color:var(--accent)}
+.sec-title{font-family:var(--f-head);font-size:14px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);text-align:center;margin:26px 0 12px}
+
+/* rules */
+table.rt{width:100%;border-collapse:collapse;font-size:15px;margin:8px 0}
+table.rt td,table.rt th{border-bottom:1px solid var(--line);padding:6px 6px;text-align:left;vertical-align:top}
+table.rt th{font-weight:600;color:var(--muted);font-size:13px}
+.stop{font-family:var(--f-head);font-size:22px;color:var(--accent)}
+
+/* notice */
+.notice{border:1px dashed var(--accent);border-radius:var(--radius);padding:12px 16px;margin:0 0 18px;font-style:italic}
+
+/* footer */
+.foot{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:30px 0 8px}
+.foot a{display:inline-flex;align-items:center;gap:6px;text-decoration:none;border:1px solid var(--line);background:var(--paper);color:var(--ink);padding:9px 14px;border-radius:var(--radius);font-size:15px}
+.foot a:hover{border-color:var(--accent);color:var(--accent)}
+.stamp{text-align:center;font-size:12px;color:var(--muted);margin-top:10px}
+.err{text-align:center;color:var(--muted);padding:40px}
+
+/* ===================== THEMES ===================== */
+
+/* Евфимий — рукопись, пергамент, киноварь */
+html[data-voice=euthymius]{
+  --bg:#d9c9a3;--bg-img:radial-gradient(ellipse at center,#efe2bf 0%,#e3d1a6 55%,#b99c68 100%);
+  --paper:rgba(248,239,214,.82);--ink:#2b1d0e;--title:#3a2410;--muted:#7a5f3d;--accent:#a3231a;--on-accent:#f8efd6;
+  --line:rgba(90,60,25,.28);--radius:2px;--shadow:0 1px 0 rgba(0,0,0,.05),inset 0 0 40px rgba(140,100,40,.12);
+  --f-head:'Old Standard TT',serif;--f-body:'Old Standard TT',serif;--f-card:'Old Standard TT',serif;
+}
+html[data-voice=euthymius] .panel{border-left:3px double rgba(163,35,26,.55)}
+html[data-voice=euthymius] .frag .card::first-letter{float:left;font-size:3.1em;line-height:.85;padding:4px 8px 0 0;color:#a3231a}
+
+/* Ашме — сад пепла, угли, лепестки */
+html[data-voice=ashme]{
+  --bg:#130e0c;--bg-img:radial-gradient(circle at 20% 110%,rgba(224,116,58,.22),transparent 45%),radial-gradient(circle at 85% -10%,rgba(201,86,107,.16),transparent 40%),linear-gradient(#1a1210,#0e0a09);
+  --paper:rgba(34,24,21,.78);--ink:#e8dccd;--title:#f2c9a4;--muted:#a48b78;--accent:#e0743a;--on-accent:#1a1210;
+  --line:rgba(224,116,58,.25);--radius:14px;--shadow:0 0 0 1px rgba(0,0,0,.4),0 10px 40px rgba(0,0,0,.5),inset 0 -20px 40px rgba(224,116,58,.05);
+  --f-head:'Forum',serif;--f-body:'Literata',serif;--f-card:'Forum',serif;
+}
+html[data-voice=ashme] body::before{content:"";position:fixed;inset:0;pointer-events:none;
+  background-image:radial-gradient(2px 2px at 12% 80%,#ff9a52aa,transparent),radial-gradient(1.5px 1.5px at 70% 60%,#ff7a3a88,transparent),radial-gradient(2px 2px at 40% 92%,#ffb07088,transparent),radial-gradient(1px 1px at 88% 30%,#c9566b99,transparent);
+  animation:embers 9s linear infinite}
+@keyframes embers{from{transform:translateY(0)}to{transform:translateY(-40px);opacity:.4}}
+
+/* Лане — тетрадь в клетку, цветные карандаши */
+html[data-voice=lane]{
+  --bg:#fbfaf3;--bg-img:linear-gradient(90deg,transparent 46px,rgba(220,80,80,.45) 46px,rgba(220,80,80,.45) 48px,transparent 48px),linear-gradient(rgba(80,120,190,.16) 1px,transparent 1px),linear-gradient(90deg,rgba(80,120,190,.16) 1px,transparent 1px);
+  --paper:rgba(255,255,250,.86);--ink:#2a3550;--title:#1f3f8a;--muted:#6b7590;--accent:#d2452f;--on-accent:#fff;
+  --line:rgba(42,53,80,.2);--radius:6px;--shadow:2px 3px 0 rgba(42,53,80,.08);
+  --f-head:'Caveat',cursive;--f-body:'PT Sans',sans-serif;--f-card:'Caveat',cursive;
+}
+html[data-voice=lane] body{background-size:auto,22px 22px,22px 22px}
+html[data-voice=lane] .head h1{transform:rotate(-1.5deg)}
+html[data-voice=lane] .frag .card{font-size:25px;line-height:1.25}
+html[data-voice=lane] .panel h2,html[data-voice=lane] .panel h3{font-size:26px}
+html[data-voice=lane] .tabs button{font-size:20px}
+html[data-voice=lane] .frag:nth-child(3n+1) .panel{transform:rotate(-.4deg)}
+html[data-voice=lane] .frag:nth-child(3n+2) .panel{transform:rotate(.35deg)}
+html[data-voice=lane] .empty{font-size:30px}
+
+/* Прохор — береста, снег, копоть */
+html[data-voice=prokhor]{
+  --bg:#e9e6dd;--bg-img:repeating-linear-gradient(0deg,transparent 0 37px,rgba(40,35,30,.10) 37px 39px,transparent 39px 61px,rgba(40,35,30,.06) 61px 62px),linear-gradient(180deg,#f3f1ea,#dcd8cc);
+  --paper:rgba(250,249,244,.86);--ink:#262422;--title:#1d1b19;--muted:#6e6860;--accent:#8a2a1e;--on-accent:#f8f6f0;
+  --line:rgba(30,28,25,.22);--radius:3px;--shadow:0 2px 0 rgba(30,28,25,.12);
+  --f-head:'Ruslan Display',serif;--f-body:'PT Serif',serif;--f-card:'PT Serif',serif;
+}
+html[data-voice=prokhor] .panel{border-top:4px solid #2b2724}
+html[data-voice=prokhor] .head h1{letter-spacing:.04em}
+html[data-voice=prokhor] .frag .card{font-style:italic}
+html[data-voice=prokhor] .panel h2{font-size:20px}
+
+/* Томмазо — протокол трибунала, сургуч */
+html[data-voice=tommazo]{
+  --bg:#ece7dc;--bg-img:linear-gradient(180deg,#f2eee5,#e2dccd);
+  --paper:rgba(252,250,245,.92);--ink:#1f1b16;--title:#1f1b16;--muted:#6f665a;--accent:#8e1b1b;--on-accent:#fbf7ef;
+  --line:rgba(31,27,22,.22);--radius:0;--shadow:0 1px 3px rgba(0,0,0,.12);
+  --f-head:'EB Garamond',serif;--f-body:'EB Garamond',serif;--f-card:'EB Garamond',serif;
+}
+html[data-voice=tommazo] .panel{background-image:repeating-linear-gradient(transparent 0 27px,rgba(31,27,22,.07) 27px 28px)}
+html[data-voice=tommazo] .head h1{font-variant:small-caps;letter-spacing:.06em}
+html[data-voice=tommazo] .frag{counter-increment:fr}
+html[data-voice=tommazo] .frag .meta::before{content:"Лист " counter(fr);}
+html[data-voice=tommazo] .frag .panel::after{content:"";position:absolute;right:14px;top:-12px;width:34px;height:34px;border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,#c23a2c,#7a1414 70%);box-shadow:0 1px 2px rgba(0,0,0,.35)}
+
+@media (max-width:480px){
+  body{font-size:16px}
+  .panel{padding:16px 14px}
+  .kv{grid-template-columns:1fr}
+  .kv dt{padding-top:6px}
+}
