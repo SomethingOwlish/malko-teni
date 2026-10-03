@@ -33,8 +33,12 @@
       empty:"Протокол открыт. Показаний нет.\nТишина тоже записывается.",
       late:"Заседание продолжается без перерыва.",
       hidden:"не всё в деле подшито",
-      whispers:["записано","свидетель","покайся","протокол","молчание","приговор","внесено в дело"] }
+      whispers:["записано","свидетель","покайся","протокол","молчание","приговор","внесено в дело"] },
+    ilinka:{ epithet:"Примоген", sub:"", outTitle:"",
+      empty:"", late:"Ночью молитва слышнее.", hidden:"Exsurge, Domine",
+      whispers:["пастырь","стадо","агнец","я знаю","не бойся","прости их","всё по плану","волкам нужен пастух"] }
   };
+  const MODE = root.dataset.mode || "player";
   const COMMON_WHISPERS = ["агнец","пятеро","не оборачивайся","скоро"];
   const V = VOICES[VOICE] || VOICES.euthymius;
   const NIGHTS = { N1:"Первая ночь", N2:"Вторая ночь", N3:"Третья ночь", N4:"Четвёртая ночь" };
@@ -179,13 +183,14 @@
 
   /* ---------- состояние ---------- */
   let last = "", data = null, activeTab = store.get("malk-tab-"+SLUG) || "frags";
-  const night = () => { const q = qs.get("night"); const n = q!==null ? +q : (data && +data.night) || 0; return Math.max(0, Math.min(4, n)); };
+  const night = () => { const q = qs.get("night"); const n = q!==null ? +q : (data && +data.night) || 0; return Math.max(0, Math.min(4, n || 0)); };
 
   function shell(){
     document.body.innerHTML = `
       <div class="sky" id="sky"></div>
       <div class="wrap">
         <header class="head">
+          ${MODE === "primo" ? `<a class="back" href="../${esc(root.dataset.cms||"")}/">← пульт</a>` : ""}
           <span class="clan">${CLAN_SIGN}</span>
           <div class="mark" id="mark"></div>
           <div class="epithet" id="epithet"></div>
@@ -194,12 +199,20 @@
           <div class="late-line">${esc(V.late)}</div>
         </header>
         <div id="notice"></div>
+        <div id="nightbox"></div>
         <nav class="tabs" role="tablist">
-          <button data-t="me">Я</button><button data-t="frags">Осколки</button><button data-t="rules">Правила</button>
+          ${MODE === "primo"
+            ? `<button data-t="me">Я</button><button data-t="plot">Ход сюжета</button><button data-t="sched">Расписание</button><button data-t="rules">Правила</button><button data-t="grules">Правила игры</button>`
+            : `<button data-t="me">Я</button><button data-t="frags">Осколки</button><button data-t="events">События</button><button data-t="rules">Правила</button>`}
         </nav>
+        <div id="gate"></div>
         <section class="tab" id="t-me"></section>
         <section class="tab" id="t-frags"></section>
+        <section class="tab" id="t-events"></section>
+        <section class="tab" id="t-plot"></section>
+        <section class="tab" id="t-sched"></section>
         <section class="tab" id="t-rules">${RULES}</section>
+        <section class="tab" id="t-grules"></section>
         <footer class="foot" id="links"></footer>
         <div class="stamp-time" id="stamp"></div>
         <span class="foot-clan">${CLAN_SIGN}</span>
@@ -209,6 +222,7 @@
     setTab(activeTab);
   }
   function setTab(t){
+    if(!document.querySelector(`.tabs button[data-t="${t}"]`)) t = MODE === "primo" ? "me" : "frags";
     activeTab = t; store.set("malk-tab-"+SLUG, t);
     document.querySelectorAll(".tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.t===t));
     document.querySelectorAll(".tab").forEach(s => s.classList.toggle("on", s.id==="t-"+t));
@@ -242,6 +256,9 @@
         if(r() < .6) add(`<i class="soot" style="${r()<.5?"right":"left"}:${8+r()*30}px;bottom:${6+r()*20}px;transform:rotate(${(r()*60-30).toFixed(0)}deg)"></i>`);
         if(idx % 2 === 0) for(let i=0;i<2+Math.floor(r()*2);i++) add(`<i class="wax" style="left:${15+r()*25+i*4}%;height:${8+r()*22}px;width:${6+r()*5}px"></i>`);
         break;
+      case "ilinka":
+        if(r() < .45) add(`<i class="owl" style="${r()<.5?"right":"left"}:${10+r()*20}px;${r()<.5?"bottom":"top"}:${8+r()*14}px;animation-delay:${(r()*5).toFixed(1)}s"></i>`);
+        break;
       case "tommazo":
         if(panel.closest(".frag")){ add(`<i class="seal"></i>`); if(r() < .7) add(`<span class="stamp">${STAMPS[Math.floor(r()*STAMPS.length)]}</span>`); }
         break;
@@ -259,7 +276,24 @@
     </div></div>`;
   }
 
+  const fmtDate = s => { if(!s) return ""; const d = new Date(s+"T12:00:00"); if(isNaN(d)) return s;
+    return ["Вс","Пн","Вт","Ср","Чт","Пт","Сб"][d.getDay()] + " " + String(d.getDate()).padStart(2,"0") + "." + String(d.getMonth()+1).padStart(2,"0"); };
+  const sortEv = (a,b) => ((a.date||"9")+(a.time||"")).localeCompare((b.date||"9")+(b.time||""));
+  const mapUrl = e => "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(e.address || (e.place + " Novi Sad"));
+  function evHTML(e, extra){
+    const now = e.day && e.day === "N" + night();
+    return `<div class="frag evp${now?" now":""}" data-seed="${esc(e.id)}"><div class="panel">
+      <div class="meta"><span>${esc(NIGHTS[e.day] || "вне ночей")}</span><span>${esc(fmtDate(e.date))}${e.time?" · "+esc(e.time):""}</span></div>
+      <div class="card">${markup(e.title)}</div>
+      ${e.place || e.address ? `<div class="where">⌖ ${esc(e.place||"")}${e.address?` · <a href="${mapUrl(e)}" target="_blank" rel="noopener">${esc(e.address)}</a>`:""}</div>` : ""}
+      ${e.desc ? `<p class="evdesc">${markup(e.desc)}</p>` : ""}
+      ${e.prep ? `<div class="prep"><span class="lbl">Что сделать до</span>${markup(e.prep)}</div>` : ""}
+      ${extra || ""}
+    </div></div>`;
+  }
+
   function render(){
+    if(MODE === "primo") return renderPrimo();
     const d = data || {}, p = d.player || {}, n = night();
     root.dataset.night = n;
     document.title = (p.character || "Малкавиан") + " — " + V.epithet;
@@ -291,12 +325,15 @@
       h += `<p class="hidline"><mark class="hid">${esc(V.hidden)}</mark></p>`;
     }
     document.getElementById("t-frags").innerHTML = h;
+    const evs = (d.events||[]).slice().sort(sortEv);
+    document.getElementById("t-events").innerHTML = sec("события", "Куда зовут") +
+      (evs.length ? evs.map(e => evHTML(e)).join("") : `<div class="panel empty">${sym(LIT[n])}Пока никуда не зовут.</div>`);
     const ids = frags.map(f=>f.id).concat(outs.map(o=>o.id), extra.map(x=>x.id));
     setTimeout(()=>store.set("malk-seen-"+SLUG, ids), 4000);
 
-    document.querySelectorAll("#t-me .panel, #t-frags .panel").forEach((pn, i) => decorate(pn, (pn.closest(".frag")?.dataset.seed || "p") + i + VOICE, i));
+    document.querySelectorAll("#t-me .panel, #t-frags .panel, #t-events .panel").forEach((pn, i) => decorate(pn, (pn.closest(".frag")?.dataset.seed || "p") + i + VOICE, i));
     document.querySelectorAll(".head h1, .frag .card, .sec .t, #t-me .panel h2").forEach(letterize);
-    if(VOICE==="euthymius") document.querySelectorAll(".frag .card").forEach(c => { const f = c.querySelector(".ch"); if(f) f.classList.add("cap"); });
+    if(VOICE==="euthymius") document.querySelectorAll("#t-frags .frag .card").forEach(c => { const f = c.querySelector(".ch"); if(f) f.classList.add("cap"); });
     sky();
 
     const L = d.links||{};
@@ -310,6 +347,7 @@
   /* ---------- живые эффекты ---------- */
   function sky(){
     const el = document.getElementById("sky"); if(!el) return;
+    if(VOICE === "ilinka" && !REDUCED){ let h2 = ""; for(let i=0;i<FX.sky[night()];i++) h2 += `<i class="feather" style="left:${Math.random()*100}%;animation-duration:${12+Math.random()*10}s;animation-delay:${-Math.random()*15}s"></i>`; el.innerHTML = h2; return; }
     if(VOICE !== "ashme" || REDUCED){ el.innerHTML = ""; return; }
     const k = FX.sky[night()]; let h = "";
     for(let i=0;i<k;i++){
@@ -354,7 +392,115 @@
     if(late) root.dataset.late = ""; else delete root.dataset.late;
   }
 
+  /* ================= страница Илинки ================= */
+  const PLAYERS = (() => { try{ return JSON.parse(root.dataset.players || "[]"); }catch(e){ return []; } })();
+  let pdata = {};   // slug -> публичные данные игрока
+  const b64d = s => Uint8Array.from(atob(s.replace(/\s/g,"")), c => c.charCodeAt(0));
+  async function unsealWith(key, box){ const pt = await crypto.subtle.decrypt({ name:"AES-GCM", iv:b64d(box.iv) }, key, b64d(box.ct)); return JSON.parse(new TextDecoder().decode(pt)); }
+  const session = () => store.get("malk-session") || (() => { try{ return JSON.parse(sessionStorage.getItem("malk-session")); }catch(e){ return null; } })();
+  function gate(on, html){
+    document.getElementById("gate").innerHTML = on ? html : "";
+    document.querySelector(".tabs").style.display = on ? "none" : "";
+    document.querySelectorAll(".tab").forEach(t => t.style.display = on ? "none" : "");
+  }
+  function loginForm(msg){
+    gate(true, `<div class="panel login"><h2>Только для координатора</h2>
+      <p>${esc(msg || "Введи пароль координатора — тот же, что в пульте.")}</p>
+      <input type="password" id="lpw" autocomplete="current-password" placeholder="пароль">
+      <button id="lgo">Войти</button><p class="muted" id="lst"></p></div>`);
+    const go = async () => {
+      const st = document.getElementById("lst"); st.textContent = "Проверяю…";
+      try{
+        const v = await (await fetch("../data/vault.json?t=" + Date.now(), { cache:"no-store" })).json();
+        const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(document.getElementById("lpw").value), "PBKDF2", false, ["deriveKey"]);
+        const k = await crypto.subtle.deriveKey({ name:"PBKDF2", salt:b64d(v.salt_c), iterations:v.iter||250000, hash:"SHA-256" }, base, { name:"AES-GCM", length:256 }, false, ["decrypt"]);
+        let s; try{ s = await unsealWith(k, v.coord); }catch(e){ throw new Error("Неверный пароль."); }
+        if(!s.ck) throw new Error("Зайди один раз в пульт паролем координатора — он включит эту страницу.");
+        store.set("malk-session", { ...s, role:"coord", name: store.get("malk-name") || "" });
+        gate(false); last = ""; load();
+      }catch(e){ st.textContent = e.message; }
+    };
+    document.getElementById("lgo").onclick = go;
+    document.getElementById("lpw").onkeydown = e => { if(e.key === "Enter") go(); };
+  }
+  async function loadPrimo(){
+    const S = session();
+    if(!S || S.role !== "coord" || !S.ck) return loginForm();
+    const r = await fetch("../data/primo.json?t=" + Date.now(), { cache:"no-store" });
+    const txt = r.ok ? await r.text() : "";
+    const pl = await Promise.all(PLAYERS.map(p => fetch("../data/" + p.slug + ".json?t=" + Date.now(), { cache:"no-store" }).then(x => x.ok ? x.json() : null).catch(() => null)));
+    const sig = txt + JSON.stringify(pl.map(x => x && x.updated));
+    if(sig === last) return;
+    last = sig;
+    PLAYERS.forEach((p,i) => pdata[p.slug] = pl[i] || {});
+    let bundle = null;
+    if(txt){
+      try{ const key = await crypto.subtle.importKey("raw", b64d(S.ck), { name:"AES-GCM" }, false, ["decrypt"]); bundle = await unsealWith(key, JSON.parse(txt)); }
+      catch(e){ return loginForm("Ключ устарел — войди заново."); }
+    }
+    data = { bundle: bundle || { nights:{}, schedule:[] }, night: Math.max(0, ...pl.map(x => +(x && x.night) || 0)), empty: !bundle };
+    gate(false); render();
+  }
+  const md = s => { let h = window.marked ? window.marked.parse(s || "") : `<pre>${esc(s||"")}</pre>`;
+    return h.replace(/<table/g, '<div class="tw"><table class="rt"').replace(/<\/table>/g, "</table></div>"); };
+  const pname = p => { const d = (pdata[p.slug] || {}).player || {}; return { ch: d.character || "", h: d.handle || p.title }; };
+  function renderPrimo(){
+    const B = data.bundle, n = night(), show = n || 1, N = (B.nights || {})[show] || {};
+    root.dataset.night = n;
+    document.title = "Илинка — Примоген";
+    document.getElementById("epithet").textContent = V.epithet;
+    document.getElementById("name").textContent = "Илинка";
+    document.getElementById("mark").innerHTML = sym(LIT[n]);
+    const today = (B.schedule || []).filter(e => e.day === "N" + show).sort(sortEv);
+    document.getElementById("nightbox").innerHTML = data.empty
+      ? `<div class="panel nightbox"><div class="card">Пакет ещё не загружен</div><p>Открой пульт → вкладка «Илинка» → «Стартовый пакет».</p></div>`
+      : `<div class="panel nightbox"><div class="meta"><span>${n ? "сейчас" : "до игры · дальше"}</span><span>${esc(NIGHTS["N"+show])}</span></div>
+        <div class="card">${esc(N.title || "")}</div>
+        <div class="where">${esc(N.when || "")}${N.place ? " · " + esc(N.place) : ""}</div>
+        ${today.length ? `<ul class="today">${today.map(e => `<li><b>${esc(e.time||"")}</b> ${esc(e.title)}${e.place?` · ${esc(e.place)}`:""}</li>`).join("")}</ul>` : ""}
+        ${N.sermon ? `<h3>Проповедь</h3><p class="sermon">${markup(N.sermon)}</p>` : ""}
+        <details class="nbmore"><summary>Что нужно и что вкинуть</summary>
+        ${N.have ? `<h3>Что нужно</h3><p>${markup(N.have)}</p>` : ""}
+        <h3>Вкинуть</h3><ul class="throw">${PLAYERS.map(p => { const t = (N.throw || {})[p.id]; const nm = pname(p);
+          return t ? `<li><b>${esc(nm.ch || nm.h)}</b>${nm.ch ? ` <span class="muted">(${esc(nm.h)})</span>` : ""} — ${markup(t)}</li>` : ""; }).join("")}</ul></details></div>`;
+    const mdPanel = (x, empty) => x ? `<div class="panel md">${md(x)}</div>` : `<div class="panel empty">${esc(empty)}</div>`;
+    document.getElementById("t-me").innerHTML = mdPanel(B.me, "ТЗ не загружено.") + `<div class="panel">${SIGN}</div>`;
+    document.getElementById("t-plot").innerHTML = mdPanel(B.plot, "Ход сюжета не загружен.");
+    document.getElementById("t-grules").innerHTML = mdPanel(B.rules, "Правила игры не загружены.");
+    // расписание
+    const who = [{ id:"ilinka", name:"Илинка" }].concat(PLAYERS.map(p => ({ id:p.id, name: pname(p).ch || pname(p).h })));
+    const groups = ["N1","N2","N3","N4",""];
+    let sh = "";
+    groups.forEach(g => { const list = (B.schedule || []).filter(e => (e.day || "") === g).sort(sortEv); if(!list.length) return;
+      sh += `<div class="sec"><div class="ep">расписание</div><div class="t">${esc(NIGHTS[g] || "Вне ночей")}</div></div>` +
+        list.map(e => evHTML(e, `${e.tz ? `<details class="tz"><summary>ТЗ</summary><div class="text">${markup(e.tz)}</div></details>` : ""}
+          <div class="chips">${who.map(w => e.who && e.who[w.id] ? `<span class="chip${w.id==="ilinka"?" me":""}">${esc(w.name)}</span>` : "").join("")}</div>`)).join(""); });
+    if(!sh) sh = `<div class="panel empty">Расписание пустое — добавь события в пульте.</div>`;
+    const imp = B.imported;
+    if(imp && imp.data){
+      sh += `<div class="sec"><div class="ep">от мастеров</div><div class="t">${esc(imp.name || "Данные мастеров")}</div></div>` + importedHTML(imp.data);
+    }
+    document.getElementById("t-sched").innerHTML = sh;
+    document.querySelectorAll("#nightbox .panel, #t-sched .panel").forEach((pn, i) => decorate(pn, (pn.closest(".frag")?.dataset.seed || "p") + i + VOICE, i));
+    document.querySelectorAll(".head h1, #nightbox .card, .sec .t, #t-sched .card").forEach(letterize);
+    sky(); schedule();
+    document.getElementById("stamp").textContent = B.updated ? "обновлено " + new Date(B.updated).toLocaleString("ru-RU",{day:"numeric",month:"long",hour:"2-digit",minute:"2-digit"}) : "";
+  }
+  function importedHTML(d){
+    let items = Array.isArray(d) ? d : (d.events || d.items || d.schedule || d.data || Object.values(d).find(Array.isArray));
+    if(!Array.isArray(items)) items = [d];
+    const val = v => Array.isArray(v) ? v.map(x => typeof x === "object" ? JSON.stringify(x) : x).join(", ") : (v && typeof v === "object" ? JSON.stringify(v) : String(v ?? ""));
+    const TITLE = ["title","name","название","event","ивент","событие"];
+    return items.map(it => {
+      if(typeof it !== "object" || !it) return `<div class="panel"><p>${esc(val(it))}</p></div>`;
+      const tk = TITLE.find(k => it[k]); const rows = Object.entries(it).filter(([k]) => k !== tk);
+      return `<div class="panel imp">${tk ? `<div class="card">${esc(val(it[tk]))}</div>` : ""}
+        <dl>${rows.map(([k,v]) => `<dt>${esc(k)}</dt><dd>${esc(val(v))}</dd>`).join("")}</dl></div>`;
+    }).join("");
+  }
+
   async function load(){
+    if(MODE === "primo"){ try{ await loadPrimo(); }catch(e){ if(!last) document.getElementById("t-me").innerHTML = `<div class="err">Не получилось открыть: ${esc(e.message)}</div>`; } return; }
     try{
       const r = await fetch("../data/"+SLUG+".json?t="+Date.now(), {cache:"no-store"});
       if(!r.ok) throw new Error(r.status);

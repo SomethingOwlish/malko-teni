@@ -92,8 +92,8 @@
 
   function blankPlayer(p){
     const d = LIB && LIB.players && LIB.players[p.id] || {};
-    const at = (kind,name) => LIB && LIB.archetypes && LIB.archetypes[kind] && LIB.archetypes[kind][name] || "";
-    return { character:d.character||"", notes:"", notice:"",
+    const at = (kind,name) => (ARCH()[kind]||{})[name] || "";
+    return { character:d.character||"", handle:d.handle||p.title, notes:"", notice:"",
       voiceName: LIB && LIB.voices[p.voice] ? LIB.voices[p.voice].name : VOICE_NAMES[p.voice], showVoiceName:false,
       external:{ name:d.external||"", text:at("external", d.external) }, internal:{ name:d.internal||"", text:at("internal", d.internal) },
       frag:{}, out:{}, cache:{} };
@@ -101,7 +101,7 @@
   function fromPublished(p, data){
     const m = blankPlayer(p); if(!data) return m;
     const pl = data.player || {};
-    Object.assign(m, { character: pl.character ?? m.character, notes:pl.notes||"", notice:pl.notice||"",
+    Object.assign(m, { character: pl.character ?? m.character, handle: pl.handle || m.handle, notes:pl.notes||"", notice:pl.notice||"",
       voiceName: pl.voiceName || m.voiceName, showVoiceName: !!pl.showVoiceName,
       external: pl.external || m.external, internal: pl.internal || m.internal });
     (data.fragments||[]).forEach(f => { m.frag[f.id] = { on:true, full:!!f.text, audio:f.audio||"" }; m.cache[f.id] = f; });
@@ -127,10 +127,10 @@
       const o = { id, label:f.label }; if(s.full && f.text) o.text = f.text; if(s.audio) o.audio = s.audio; oc.push(o); });
     fr.sort((a,b)=>a.n-b.n); oc.sort((a,b)=>a.id.localeCompare(b.id));
     return { night:+M.night||0, notice:M.notice||"", links:M.links,
-      player:{ character:m.character, voiceName:m.voiceName, showVoiceName:m.showVoiceName, external:m.external, internal:m.internal, notes:m.notes, notice:m.notice },
+      player:{ character:m.character, handle:m.handle||p.title, voiceName:m.voiceName, showVoiceName:m.showVoiceName, external:m.external, internal:m.internal, notes:m.notes, notice:m.notice },
       fragments:fr, outcomes:oc };
   }
-  const core = d => { if(!d) return ""; const c = {...d}; delete c.updated; delete c.extra; return JSON.stringify(c); };
+  const core = d => { if(!d) return ""; const c = {...d}; delete c.updated; delete c.extra; delete c.events; return JSON.stringify(c); };
   const dirty = p => core(remote[pathOf(p)]) !== core(buildCore(p));
   const saveDraft = () => ls.set("malk-draft", M);
 
@@ -147,7 +147,7 @@
       for(const p of PLAYERS){
         if(!dirty(p)) continue;
         const body = buildCore(p);
-        await mutate(pathOf(p), d => ({ ...body, extra:(d && d.extra) || [] }), `Малки: ${p.title} — карточка`);
+        await mutate(pathOf(p), d => ({ ...body, extra:(d && d.extra) || [], events:(d && d.events) || [] }), `Малки: ${p.title} — карточка`);
         n++;
       }
       status(n ? `Опубликовано карточек: ${n}. Игроки увидят через 1–2 минуты.` : "Изменений нет.", "ok");
@@ -181,6 +181,7 @@
   /* ================= интерфейс ================= */
   function status(t, cls){ const s = $("#status"); if(s){ s.textContent = t; s.className = "status " + (cls||""); } }
   const show = id => ["loginView","setupView","appView"].forEach(v => $("#"+v).classList.toggle("hide", v !== id));
+  const handleOf = p => (M && M.players[p.id] && M.players[p.id].handle) || ((remote[pathOf(p)]||{}).player||{}).handle || p.title;
   const charName = p => (M && M.players[p.id] && M.players[p.id].character) || ((remote[pathOf(p)]||{}).player||{}).character || p.title;
 
   function render(){
@@ -192,8 +193,9 @@
 
     let tabs = "";
     if(coord) tabs += PLAYERS.map(p => { const m = M.players[p.id]; const cnt = Object.values(m.frag).filter(s=>s.on).length;
-      return `<button class="${p.id===cur?"cur":""}" data-p="${p.id}">${esc(p.title)}<small>${VOICE_NAMES[p.voice]} · ${cnt}/7${dirty(p)?" ●":""}</small></button>`; }).join("");
+      return `<button class="${p.id===cur?"cur":""}" data-p="${p.id}">${esc(handleOf(p))}<small>${VOICE_NAMES[p.voice]} · ${cnt}/7${dirty(p)?" ●":""}</small></button>`; }).join("");
     tabs += `<button class="${cur==="_ev"?"cur":""}" data-p="_ev">Видения<small>и ивенты</small></button>`;
+    if(coord) tabs += `<button class="${cur==="_sched"?"cur":""}" data-p="_sched">Расписание<small>события</small></button><button class="${cur==="_primo"?"cur":""}" data-p="_primo">Илинка<small>ТЗ, ночи, сюжет</small></button>`;
     if(coord) tabs += `<button class="${cur==="_links"?"cur":""}" data-p="_links">Ссылки<small>и общее</small></button><button class="${cur==="_keys"?"cur":""}" data-p="_keys">Ключи<small>пароли</small></button>`;
     $("#tabs").innerHTML = tabs;
     $("#tabs").querySelectorAll("button").forEach(b => b.onclick = () => { cur = b.dataset.p; render(); });
@@ -206,6 +208,8 @@
       nb.querySelectorAll("[data-n]").forEach(b => b.onclick = () => { M.night = +b.dataset.n; saveDraft(); render(); status("Ночь выбрана — нажми «Опубликовать».", "ok"); });
     }
     if(cur === "_ev") return renderEvents();
+    if(cur === "_sched") return renderSched();
+    if(cur === "_primo") return renderPrimo();
     if(cur === "_links") return renderLinks();
     if(cur === "_keys") return renderKeys();
     renderPlayer(PLAYERS.find(p => p.id === cur));
@@ -219,8 +223,9 @@
   }
 
   /* --- карточка игрока (координатор) --- */
+  const ARCH = () => (LIB && LIB.archetypes) || window.MALK_ARCH || { external:{}, internal:{} };
   function archSelect(kind, val){
-    const names = LIB && LIB.archetypes ? Object.keys(LIB.archetypes[kind]) : [];
+    const names = Object.keys(ARCH()[kind] || {});
     if(val && !names.includes(val)) names.push(val);
     return `<select data-arch="${kind}"><option value="">— нет —</option>${names.map(n=>`<option ${n===val?"selected":""}>${esc(n)}</option>`).join("")}</select>`;
   }
@@ -248,6 +253,7 @@
       <details class="box"><summary style="cursor:pointer;font:400 19px Forum,serif">Профиль: имя, архетипы, напоминалка, объявление</summary>
         <div class="grid2">
           <label>Имя персонажа<input data-pf="character" value="${esc(m.character)}"></label>
+          <label>Имя игрока<input data-pf="handle" value="${esc(m.handle||p.title)}"></label>
           <label>Имя голоса<input data-pf="voiceName" value="${esc(m.voiceName)}"><span class="chk"><input type="checkbox" data-pf="showVoiceName" ${m.showVoiceName?"checked":""}> имя проступает у игрока</span></label>
           <label>Внешний архетип ${archSelect("external", m.external.name)}</label>
           <label>Внутренний архетип ${archSelect("internal", m.internal.name)}</label>
@@ -259,7 +265,7 @@
       <p class="muted">Видения и ивенты для игрока — во вкладке «Видения». Они сохраняются сразу, кнопка «Опубликовать» для них не нужна.</p>`;
     const main = $("#main");
     main.querySelectorAll("[data-pf]").forEach(i => i.oninput = i.onchange = () => { m[i.dataset.pf] = i.type==="checkbox" ? i.checked : i.value; saveDraft(); renderTabsOnly(); });
-    main.querySelectorAll("[data-arch]").forEach(sel => sel.onchange = () => { const k = sel.dataset.arch; m[k] = { name:sel.value, text: LIB && LIB.archetypes[k][sel.value] || "" }; saveDraft(); render(); });
+    main.querySelectorAll("[data-arch]").forEach(sel => sel.onchange = () => { const k = sel.dataset.arch; m[k] = { name:sel.value, text: (ARCH()[k]||{})[sel.value] || "" }; saveDraft(); render(); });
     main.querySelectorAll("[data-at]").forEach(t => t.oninput = () => { m[t.dataset.at].text = t.value; saveDraft(); renderTabsOnly(); });
     main.querySelectorAll(".item").forEach(row => {
       const s = ensure(row.dataset.kind==="frag" ? m.frag : m.out, row.dataset.id);
@@ -358,6 +364,186 @@
     $("#toSetup2").onclick = () => openSetup(true);
   }
 
+  /* ================= страница Илинки и расписание (только координатор) ================= */
+  const PRIMO = "data/primo.json";
+  let P = null; // расшифрованный пакет Илинки
+  const blankPrimo = () => ({ v:1, me:"", plot:"", rules:"", nights:{1:{},2:{},3:{},4:{}}, schedule:[], imported:null });
+  async function ckKey(){
+    if(!S.ck) throw new Error("перезайди в пульт, чтобы включить ключ страницы");
+    return crypto.subtle.importKey("raw", b64d(S.ck), { name:"AES-GCM" }, false, ["encrypt","decrypt"]);
+  }
+  async function loadPrimo(){
+    if(!S.ck){ P = null; return; }
+    const { data } = await getFile(PRIMO);
+    P = data ? await unseal(await ckKey(), data) : blankPrimo();
+  }
+  async function savePrimo(fn, msg){
+    const key = await ckKey();
+    for(let attempt=0; attempt<5; attempt++){
+      let { data, sha } = await getFile(PRIMO);
+      const k = known[PRIMO];
+      if(attempt === 0 && k && sha !== k.sha && Date.now() - k.t < 180000){ data = k.data; sha = k.sha; }
+      const cur = data ? await unseal(key, data) : blankPrimo();
+      const next = fn(cur) || cur;
+      next.updated = new Date().toISOString();
+      const r = await putFile(PRIMO, await seal(key, next), sha, msg || "Илинка");
+      if(!r.conflict){ P = next; return next; }
+      delete known[PRIMO];
+      await new Promise(res => setTimeout(res, 1200 * (attempt + 1)));
+    }
+    throw new Error("GitHub не успел обновиться. Подожди полминуты и повтори.");
+  }
+  const PUBLIC_EV = e => ({ id:e.id, day:e.day||"", date:e.date||"", time:e.time||"", place:e.place||"", address:e.address||"", title:e.title||"", desc:e.desc||"", prep:e.prep||"" });
+  async function syncEvents(){
+    const sched = (P && P.schedule) || [];
+    for(const p of PLAYERS){
+      const evs = sched.filter(e => e.who && e.who[p.id]).map(PUBLIC_EV);
+      await mutate(pathOf(p), d => { d = d || {}; d.events = evs; return d; }, `События — ${p.title}`);
+    }
+  }
+  const DAYS = ["N1","N2","N3","N4",""];
+  const dayLabel = d => d ? d : "вне ночей";
+  const fmtDate = s => { if(!s) return ""; const d = new Date(s+"T12:00:00"); if(isNaN(d)) return s;
+    return ["Вс","Пн","Вт","Ср","Чт","Пт","Сб"][d.getDay()] + " " + String(d.getDate()).padStart(2,"0") + "." + String(d.getMonth()+1).padStart(2,"0"); };
+  const sortEv = (a,b) => ((a.date||"9")+(a.time||"")).localeCompare((b.date||"9")+(b.time||""));
+
+  function needPrimo(){
+    if(P) return false;
+    $("#main").innerHTML = `<div class="box"><h2>Нужен повторный вход</h2><p>Чтобы включить страницу Илинки и расписание, выйди и зайди в пульт заново паролем координатора. Это нужно один раз.</p><button class="btn" id="relog">Выйти и войти заново</button></div>`;
+    $("#relog").onclick = () => $("#logout").click();
+    return true;
+  }
+
+  let schedEdit = null;
+  function renderSched(){
+    if(needPrimo()) return;
+    const list = (P.schedule||[]).slice().sort(sortEv);
+    const e = schedEdit || { id:"", day:"N1", date:"", time:"", place:"", address:"", title:"", desc:"", prep:"", tz:"", who:{ ilinka:true } };
+    const who = [{ id:"ilinka", name:"Илинка" }].concat(PLAYERS.map(p => ({ id:p.id, name:`${charName(p)} (${handleOf(p)})` })));
+    $("#main").innerHTML = `
+      <div class="box"><h2>${schedEdit ? "Изменить событие" : "Новое событие"}</h2>
+        <div class="grid2">
+          <label>День<select id="s-day">${DAYS.map(d => `<option value="${d}" ${e.day===d?"selected":""}>${dayLabel(d)}</option>`).join("")}</select></label>
+          <label>Дата<input id="s-date" type="date" value="${esc(e.date)}"></label>
+          <label>Время<input id="s-time" type="time" value="${esc(e.time)}"></label>
+          <label>Место<input id="s-place" value="${esc(e.place)}" placeholder="чайная, набережная…"></label>
+        </div>
+        <label>Адрес (откроется на карте)<input id="s-addr" value="${esc(e.address)}" placeholder="Нови-Сад, улица, дом"></label>
+        <label>Название<input id="s-title" value="${esc(e.title)}"></label>
+        <label>Описание — видят игроки<textarea id="s-desc" rows="2">${esc(e.desc)}</textarea></label>
+        <label>Что сделать до — видят игроки<textarea id="s-prep" rows="2">${esc(e.prep)}</textarea></label>
+        <label>ТЗ — только на странице Илинки<textarea id="s-tz" rows="4">${esc(e.tz)}</textarea></label>
+        <div><span class="muted" style="font-size:13px">Участники</span><br>
+          <label class="chk"><input type="checkbox" id="w-all"> все</label>
+          ${who.map(w => `<label class="chk"><input type="checkbox" class="w" value="${w.id}" ${e.who && e.who[w.id]?"checked":""}> ${esc(w.name)}</label>`).join("")}</div>
+        <p class="muted" style="font-size:13px">Игроки видят событие во вкладке «События», только если отмечены. Разметка: <code>~~ложь~~{правда}</code> · <code>[[скрытое]]</code> · <code>||плашка||</code>.</p>
+        <button class="btn" id="s-save">${schedEdit ? "Сохранить" : "Добавить"}</button>
+        ${schedEdit ? `<button class="btn ghost" id="s-cancel">Отмена</button>` : ""}
+      </div>
+      <div class="box"><h2>Расписание · ${list.length}</h2>
+        ${list.map(x => `<div class="ev" data-id="${esc(x.id)}">
+          <div><span class="pill">${esc(dayLabel(x.day))}</span> ${esc(fmtDate(x.date))} ${esc(x.time||"")} · <b>${esc(x.title)}</b></div>
+          <div class="who">${esc(x.place||"")}${x.address?" · "+esc(x.address):""}</div>
+          <div class="who">→ ${who.filter(w => x.who && x.who[w.id]).map(w => esc(w.name.split(" (")[0])).join(", ") || "никто"}</div>
+          <div class="acts"><button class="btn ghost small" data-edit>Изменить</button><button class="btn ghost small" data-del>Убрать</button></div>
+        </div>`).join("") || `<p class="muted">Пусто. Стартовые четыре встречи клана придут вместе со стартовым пакетом во вкладке «Илинка».</p>`}
+      </div>`;
+    const ws = [...document.querySelectorAll(".w")];
+    $("#w-all").checked = ws.every(w => w.checked);
+    $("#w-all").onchange = ev => ws.forEach(w => w.checked = ev.target.checked);
+    ws.forEach(w => w.onchange = () => $("#w-all").checked = ws.every(w => w.checked));
+    if(schedEdit) $("#s-cancel").onclick = () => { schedEdit = null; renderSched(); };
+    $("#s-save").onclick = async () => {
+      const item = { id: e.id || ("e" + Date.now().toString(36)), day:$("#s-day").value, date:$("#s-date").value, time:$("#s-time").value,
+        place:$("#s-place").value.trim(), address:$("#s-addr").value.trim(), title:$("#s-title").value.trim(),
+        desc:$("#s-desc").value.trim(), prep:$("#s-prep").value.trim(), tz:$("#s-tz").value.trim(),
+        who: Object.fromEntries(ws.map(w => [w.value, w.checked])) };
+      if(!item.title) return status("Нужно название.", "bad");
+      $("#s-save").disabled = true; status("Сохраняю…");
+      try{
+        await savePrimo(pr => { pr.schedule = (pr.schedule||[]).filter(x => x.id !== item.id); pr.schedule.push(item); return pr; }, "Расписание: " + item.title);
+        await syncEvents(); schedEdit = null; status("Сохранено. Игроки увидят через 1–2 минуты.", "ok");
+      }catch(err){ status("Ошибка: " + err.message, "bad"); }
+      renderSched();
+    };
+    document.querySelectorAll("#main .ev").forEach(row => {
+      const x = list.find(v => v.id === row.dataset.id);
+      row.querySelector("[data-edit]").onclick = () => { schedEdit = JSON.parse(JSON.stringify(x)); renderSched(); scrollTo({ top:0, behavior:"smooth" }); };
+      row.querySelector("[data-del]").onclick = async () => {
+        if(!confirm("Убрать событие из расписания и у всех игроков?")) return;
+        status("Убираю…");
+        try{ await savePrimo(pr => { pr.schedule = (pr.schedule||[]).filter(v => v.id !== x.id); return pr; }, "Расписание: убрано"); await syncEvents(); status("Убрано.", "ok"); }
+        catch(err){ status("Ошибка: " + err.message, "bad"); }
+        renderSched();
+      };
+    });
+  }
+
+  function renderPrimo(){
+    if(needPrimo()) return;
+    const N = P.nights || {};
+    const nightBlock = i => { const n = N[i] || {}; const th = n.throw || {};
+      return `<details class="box"><summary style="cursor:pointer;font:400 19px Forum,serif">Ночь ${i}${n.title?" · "+esc(n.title):""}</summary>
+        <div class="grid2"><label>Ивент<input data-n="${i}" data-k="title" value="${esc(n.title||"")}"></label>
+        <label>Когда<input data-n="${i}" data-k="when" value="${esc(n.when||"")}"></label></div>
+        <label>Где<input data-n="${i}" data-k="place" value="${esc(n.place||"")}"></label>
+        <label>Проповедь<textarea data-n="${i}" data-k="sermon" rows="2">${esc(n.sermon||"")}</textarea></label>
+        <label>Что должно быть / что нужно<textarea data-n="${i}" data-k="have" rows="2">${esc(n.have||"")}</textarea></label>
+        ${PLAYERS.map(p => `<label>Вкинуть: ${esc(charName(p))} (${esc(handleOf(p))})<textarea data-n="${i}" data-t="${p.id}" rows="2">${esc(th[p.id]||"")}</textarea></label>`).join("")}
+      </details>`; };
+    const imp = P.imported;
+    $("#main").innerHTML = `
+      <div class="box"><div class="pagehead"><h2>Страница Илинки</h2><a class="btn ghost small" href="../${window.MALK_PRIMO_SLUG}/" target="_blank">Открыть ↗</a></div>
+        <p class="muted">Всё здесь хранится зашифрованным и видно только с паролем координатора.</p>
+        <label>Стартовый пакет (primo-seed-PRIVATE.json): ТЗ, ход сюжета, правила игры, ночи и четыре встречи клана<input type="file" id="seed" accept=".json,application/json"></label>
+        <p class="muted" style="font-size:13px">Загрузка пакета заменит ТЗ, ход сюжета, правила и ночи. Расписание: стартовые встречи добавятся, твои события останутся.</p></div>
+      <div class="box"><h2>Шапка по ночам</h2><p class="muted">Что показывать наверху страницы Илинки в каждую ночь.</p></div>
+      ${[1,2,3,4].map(nightBlock).join("")}
+      <div class="box"><button class="btn" id="nightsSave">Сохранить ночи</button></div>
+      ${[["me","Я — ТЗ Илинки"],["plot","Ход сюжета"],["rules","Правила игры (мастерские)"]].map(([k,t]) => `
+        <details class="box"><summary style="cursor:pointer;font:400 19px Forum,serif">${t} · ${((P[k]||"").length/1000).toFixed(1)} тыс. знаков</summary>
+          <p class="muted" style="font-size:13px">Markdown: <code># заголовок</code>, <code>**жирный**</code>, <code>- список</code>.</p>
+          <textarea id="md-${k}" rows="18" style="font-family:ui-monospace,monospace;font-size:13px">${esc(P[k]||"")}</textarea>
+          <button class="btn" data-mdsave="${k}">Сохранить</button></details>`).join("")}
+      <div class="box"><h2>Данные мастеров (JSON)</h2>
+        <p class="muted">Файл, собранный из данных мастеров. Показывается на странице Илинки во вкладке «Расписание» отдельными панелями.</p>
+        <p>${imp ? `Загружен: <b>${esc(imp.name||"файл")}</b>, ${new Date(imp.at).toLocaleString("ru-RU",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}` : "Пока не загружен."}</p>
+        <input type="file" id="impfile" accept=".json,application/json">
+        ${imp ? `<button class="btn ghost small" id="impdel" style="margin-top:8px">Убрать</button>` : ""}</div>`;
+    $("#seed").onchange = async ev => {
+      const f = ev.target.files[0]; if(!f) return;
+      let seed; try{ seed = JSON.parse(await f.text()); }catch(e){ return status("Это не JSON.", "bad"); }
+      if(seed.kind !== "malk-primo-seed") return status("Это не стартовый пакет Илинки.", "bad");
+      status("Загружаю пакет…");
+      try{
+        await savePrimo(pr => { pr.me = seed.me; pr.plot = seed.plot; pr.rules = seed.rules; pr.nights = seed.nights;
+          const ids = new Set((pr.schedule||[]).map(x => x.id)); pr.schedule = (pr.schedule||[]).concat((seed.schedule||[]).filter(x => !ids.has(x.id))); return pr; }, "Илинка: стартовый пакет");
+        await syncEvents(); status("Пакет загружен, встречи клана разосланы игрокам.", "ok");
+      }catch(e){ status("Ошибка: " + e.message, "bad"); }
+      renderPrimo();
+    };
+    $("#nightsSave").onclick = async () => {
+      const nights = JSON.parse(JSON.stringify(P.nights || {}));
+      document.querySelectorAll("[data-n]").forEach(i => { const n = nights[i.dataset.n] = nights[i.dataset.n] || {};
+        if(i.dataset.k) n[i.dataset.k] = i.value; else { n.throw = n.throw || {}; n.throw[i.dataset.t] = i.value; } });
+      status("Сохраняю…");
+      try{ await savePrimo(pr => { pr.nights = nights; return pr; }, "Илинка: ночи"); status("Сохранено.", "ok"); }catch(e){ status("Ошибка: " + e.message, "bad"); }
+    };
+    document.querySelectorAll("[data-mdsave]").forEach(b => b.onclick = async () => {
+      const k = b.dataset.mdsave, v = $("#md-" + k).value; status("Сохраняю…");
+      try{ await savePrimo(pr => { pr[k] = v; return pr; }, "Илинка: " + k); status("Сохранено.", "ok"); }catch(e){ status("Ошибка: " + e.message, "bad"); }
+    });
+    $("#impfile").onchange = async ev => {
+      const f = ev.target.files[0]; if(!f) return;
+      let data; try{ data = JSON.parse(await f.text()); }catch(e){ return status("Это не JSON.", "bad"); }
+      status("Загружаю…");
+      try{ await savePrimo(pr => { pr.imported = { name:f.name, at:new Date().toISOString(), data }; return pr; }, "Илинка: данные мастеров"); status("Загружено.", "ok"); }
+      catch(e){ status("Ошибка: " + e.message, "bad"); }
+      renderPrimo();
+    };
+    if(imp) $("#impdel").onclick = async () => { try{ await savePrimo(pr => { pr.imported = null; return pr; }); status("Убрано.", "ok"); }catch(e){ status("Ошибка: " + e.message, "bad"); } renderPrimo(); };
+  }
+
   /* ================= вход и настройка ================= */
   const guessRepo = () => {
     const h = location.hostname.match(/^([^.]+)\.github\.io$/i);
@@ -370,8 +556,20 @@
   async function tryLogin(pw){
     const vault = await fetchVault();
     if(!vault) throw new Error("Ключи ещё не настроены — нажми «Первичная настройка ключей».");
+    let coord = null;
     try{ const k = await deriveKey(pw, b64d(vault.salt_c)); const s = await unseal(k, vault.coord);
-      const lib = vault.lib ? await unseal(k, vault.lib) : null; return { s:{ ...s, role:"coord" }, lib }; }catch(e){}
+      const lib = vault.lib ? await unseal(k, vault.lib) : null; coord = { k, s, lib }; }catch(e){}
+    if(coord){
+      const { k, s, lib } = coord;
+      if(!s.ck){ // ключ для страницы Илинки — создаём один раз
+        s.ck = b64e(crypto.getRandomValues(new Uint8Array(32)));
+        const prevS = S; S = { ...s };
+        try{ const sealed = await seal(k, s); const g = await getFile(VAULT); const v = g.data || vault; v.coord = sealed;
+          const r = await putFile(VAULT, v, g.sha, "Ключи пульта: страница Илинки"); if(r.conflict) throw new Error("конфликт"); }
+        catch(e){ S = prevS; throw new Error("Не удалось включить страницу Илинки: " + e.message); }
+      }
+      return { s:{ ...s, role:"coord" }, lib };
+    }
     try{ const k = await deriveKey(pw, b64d(vault.salt_m)); const s = await unseal(k, vault.master);
       return { s:{ ...s, role:"master" }, lib:null }; }catch(e){}
     throw new Error("Неверный пароль.");
@@ -387,6 +585,7 @@
   async function doSetup(){
     const st = (t,c) => { $("#setupStatus").textContent = t; $("#setupStatus").className = "status " + (c||""); };
     const cfg = { owner:$("#s-owner").value.trim(), repo:$("#s-repo").value.trim(), branch:$("#s-branch").value.trim()||"main", token:$("#s-token").value.trim() };
+    const ck = (S && S.role === "coord" && S.ck) || b64e(crypto.getRandomValues(new Uint8Array(32)));
     const pc = $("#s-pc").value, pm = $("#s-pm").value;
     if(!cfg.owner || !cfg.repo || !cfg.token) return st("Заполни логин, репозиторий и токен.", "bad");
     if(pc.length < 8 || pm.length < 8) return st("Пароли — минимум 8 символов.", "bad");
@@ -396,8 +595,8 @@
       const salt_c = crypto.getRandomValues(new Uint8Array(16)), salt_m = crypto.getRandomValues(new Uint8Array(16));
       const kc = await deriveKey(pc, salt_c), km = await deriveKey(pm, salt_m);
       const vault = { v:1, iter:ITER, salt_c:b64e(salt_c), salt_m:b64e(salt_m),
-        coord: await seal(kc, cfg), master: await seal(km, cfg), lib: setupLib ? await seal(kc, setupLib) : null };
-      S = { ...cfg, role:"coord", name: ls.get("malk-name","") };
+        coord: await seal(kc, { ...cfg, ck }), master: await seal(km, cfg), lib: setupLib ? await seal(kc, setupLib) : null };
+      S = { ...cfg, ck, role:"coord", name: ls.get("malk-name","") };
       st("Сохраняю в репозиторий…");
       const { sha } = await getFile(VAULT).catch(() => ({ sha:null }));
       const r = await putFile(VAULT, vault, sha, "Ключи пульта");
@@ -414,6 +613,8 @@
     show("appView");
     try{ await loadRemote(); }catch(e){ status(e.message, "bad"); }
     if(S.role === "coord"){
+      try{ await loadPrimo(); }catch(e){ status("Страница Илинки: " + e.message, "bad"); }
+      const pl = $("#primoLink"); if(pl){ pl.classList.remove("hide"); pl.href = "../" + window.MALK_PRIMO_SLUG + "/"; }
       const draft = ls.get("malk-draft", null);
       M = (draft && draft.players && PLAYERS.every(p => draft.players[p.id])) ? draft : modelFromRemote();
       if(M === draft && PLAYERS.some(dirty)) status("Есть неопубликованный черновик с этого устройства (●).", "ok");
