@@ -1,10 +1,10 @@
 {
- "notice": "",
+ "notice": "До игры осталось еще сколько-то там дней;\nА ты подписался на клановый созвон? ",
  "links": {
   "masters": {
    "label": "Мастера",
-   "url": "",
-   "show": false
+   "url": "https://t.me/DanubeShadows",
+   "show": true
   },
   "ilinka": {
    "label": "Илинка",
@@ -13,8 +13,8 @@
   },
   "chat": {
    "label": "Клановый чат",
-   "url": "",
-   "show": false
+   "url": "https://t.me/+CgI6All1FdFkNWIy",
+   "show": true
   }
  },
  "player": {
@@ -33,6 +33,13 @@
   "notice": ""
  },
  "fragments": [],
- "outcomes": [],
- "extra": []
+ "outcomes": [
+  {
+   "id": "euthymius-o1",
+   "label": "Вознесение",
+   "text": "Записано. Город стоит. Я могу закрыть книгу."
+  }
+ ],
+ "extra": [],
+ "updated": "2026-10-03T15:09:41.422Z"
 }
