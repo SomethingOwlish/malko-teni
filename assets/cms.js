@@ -132,7 +132,7 @@
   }
   const core = d => { if(!d) return ""; const c = {...d}; delete c.updated; delete c.extra; delete c.events; return JSON.stringify(c); };
   const dirty = p => core(remote[pathOf(p)]) !== core(buildCore(p));
-  const saveDraft = () => ls.set("malk-draft", M);
+  const saveDraft = () => { M.savedAt = new Date().toISOString(); ls.set("malk-draft", M); };
 
   async function loadRemote(){
     status("Читаю, что сейчас видят игроки…");
@@ -291,7 +291,7 @@
         <label>Короткая фраза (видна сразу)<textarea id="e-title" rows="2">${esc(x.title)}</textarea></label>
         <label>Полный текст — необязательно<textarea id="e-text" rows="4">${esc(x.text)}</textarea></label>
         <div class="grid2">
-          <label>Ночь<select id="e-night">${["","N1","N2","N3","N4"].map(n=>`<option value="${n}" ${x.night===n?"selected":""}>${n||"без ночи"}</option>`).join("")}</select></label>
+          <label>Ночь — игрок увидит с этой ночи<select id="e-night">${["","N1","N2","N3","N4"].map(n=>`<option value="${n}" ${x.night===n?"selected":""}>${n||"без ночи"}</option>`).join("")}</select></label>
           <label>Аудио — необязательно<input id="e-audio" type="url" value="${esc(x.audio)}" placeholder="https://…mp3"></label>
         </div>
         <label>Подпись (видят только мастера)<input id="e-by" value="${esc(x.by || S.name || "")}" placeholder="кто вкинул"></label>
@@ -496,7 +496,7 @@
       <div class="box"><div class="pagehead"><h2>Страница Илинки</h2><a class="btn ghost small" href="../${window.MALK_PRIMO_SLUG}/" target="_blank">Открыть ↗</a></div>
         <p class="muted">Всё здесь хранится зашифрованным и видно только с паролем координатора.</p>
         <label>Стартовый пакет (primo-seed-PRIVATE.json): ТЗ, ход сюжета, правила игры, ночи и четыре встречи клана<input type="file" id="seed" accept=".json,application/json"></label>
-        <p class="muted" style="font-size:13px">Загрузка пакета заменит ТЗ, ход сюжета, правила и ночи. Расписание: стартовые встречи добавятся, твои события останутся.</p></div>
+        <p class="muted" style="font-size:13px">Загрузка пакета заменит ТЗ, ход сюжета, правила и ночи. Расписание: события из пакета заменят одноимённые, твои остальные события останутся.</p></div>
       <div class="box"><h2>Шапка по ночам</h2><p class="muted">Что показывать наверху страницы Илинки в каждую ночь.</p></div>
       ${[1,2,3,4].map(nightBlock).join("")}
       <div class="box"><button class="btn" id="nightsSave">Сохранить ночи</button></div>
@@ -517,7 +517,8 @@
       status("Загружаю пакет…");
       try{
         await savePrimo(pr => { pr.me = seed.me; pr.plot = seed.plot; pr.rules = seed.rules; pr.nights = seed.nights;
-          const ids = new Set((pr.schedule||[]).map(x => x.id)); pr.schedule = (pr.schedule||[]).concat((seed.schedule||[]).filter(x => !ids.has(x.id))); return pr; }, "Илинка: стартовый пакет");
+          const ids = new Set((seed.schedule||[]).map(x => x.id)); const rm = new Set(seed.remove||[]);
+          pr.schedule = (pr.schedule||[]).filter(x => !ids.has(x.id) && !rm.has(x.id)).concat(seed.schedule||[]); return pr; }, "Илинка: стартовый пакет");
         await syncEvents(); status("Пакет загружен, встречи клана разосланы игрокам.", "ok");
       }catch(e){ status("Ошибка: " + e.message, "bad"); }
       renderPrimo();
@@ -616,7 +617,10 @@
       try{ await loadPrimo(); }catch(e){ status("Страница Илинки: " + e.message, "bad"); }
       const pl = $("#primoLink"); if(pl){ pl.classList.remove("hide"); pl.href = "../" + window.MALK_PRIMO_SLUG + "/"; }
       const draft = ls.get("malk-draft", null);
-      M = (draft && draft.players && PLAYERS.every(p => draft.players[p.id])) ? draft : modelFromRemote();
+      // черновик устарел, если на сайте есть изменения новее него (например, правки, внесённые не из этого браузера)
+      const newestRemote = Object.values(remote).reduce((a, d) => d && (d.updated||"") > a ? d.updated : a, "");
+      const fresh = draft && draft.players && PLAYERS.every(p => draft.players[p.id]) && (draft.savedAt || "") >= newestRemote;
+      M = fresh ? draft : modelFromRemote();
       if(M === draft && PLAYERS.some(dirty)) status("Есть неопубликованный черновик с этого устройства (●).", "ok");
     }
     render();

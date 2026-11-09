@@ -313,7 +313,9 @@
 
     const seen = store.get("malk-seen-"+SLUG);
     const frags = (d.fragments||[]).slice().sort((a,b)=>(a.n||0)-(b.n||0));
-    const outs = d.outcomes||[], extra = d.extra||[];
+    // шум Сети открывается сам: видение с ночью N видно с этой ночи (по ночи из пульта, не по ?night=)
+    const realNight = Math.max(0, Math.min(4, +d.night || 0));
+    const outs = d.outcomes||[], extra = (d.extra||[]).filter(x => !x.night || +String(x.night).replace(/\D/g,"") <= realNight).slice().reverse();
     const sec = (ep, t, cnt) => `<div class="sec"><div class="ep">${ep}</div><div class="t">${t}</div>${cnt?`<div class="n">${cnt}</div>`:""}</div>`;
     let h = "";
     if(!frags.length && !outs.length && !extra.length){
@@ -321,7 +323,7 @@
     } else {
       if(frags.length) h += sec("осколки", esc(V.sub), `${frags.length} из 7`) + frags.map(f=>fragHTML(f,seen)).join("");
       if(outs.length) h += sec("осколки", esc(V.outTitle)) + outs.map(o=>fragHTML({id:o.id,night:"N4",card:o.label,text:o.text,audio:o.audio},seen)).join("");
-      if(extra.length) h += sec("осколки", "Шум Сети") + extra.map(x=>fragHTML({id:x.id,night:x.night||"",card:x.title,text:x.text,audio:x.audio},seen)).join("");
+      if(extra.length) h += sec("осколки", "Шум Сети") + extra.map(x=>fragHTML({id:x.id,night:x.night||"",card:x.title,text:x.text,audio:x.audio},seen,x.label?`${NIGHTS[x.night]||""}${NIGHTS[x.night]?" · ":""}${x.label}`:"")).join("");
       h += `<p class="hidline"><mark class="hid">${esc(V.hidden)}</mark></p>`;
     }
     document.getElementById("t-frags").innerHTML = h;
