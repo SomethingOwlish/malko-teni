@@ -316,7 +316,8 @@
     const frags = (d.fragments||[]).slice().sort((a,b)=>(a.n||0)-(b.n||0));
     // шум Сети открывается сам: видение с ночью N видно с этой ночи (по ночи из пульта, не по ?night=)
     const realNight = Math.max(0, Math.min(4, +d.night || 0));
-    const outs = d.outcomes||[], extra = (d.extra||[]).filter(x => !x.night || +String(x.night).replace(/\D/g,"") <= realNight).slice().reverse();
+    const outs = d.outcomes||[], extra = (d.extra||[]).filter(x => x.kind === "master" ? x.open === true
+      : (!x.night || +String(x.night).replace(/\D/g,"") <= realNight)).slice().reverse();
     const sec = (ep, t, cnt) => `<div class="sec"><div class="ep">${ep}</div><div class="t">${t}</div>${cnt?`<div class="n">${cnt}</div>`:""}</div>`;
     let h = "";
     if(!frags.length && !outs.length && !extra.length){

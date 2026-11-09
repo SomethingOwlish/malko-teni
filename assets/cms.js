@@ -156,9 +156,31 @@
   }
 
   /* ================= видения (общие для координатора и мастеров) ================= */
+  /* видения от мастеров: закрыты, пока координатор не откроет их игроку */
+  function renderMasterVisions(p){
+    const box = document.getElementById("mvbox"); if(!box) return;
+    const list = (((remote[pathOf(p)]||{}).extra)||[]).filter(x => x.kind === "master");
+    const opened = list.filter(x => x.open).length;
+    box.innerHTML = `<h2>Видения от мастеров · ${opened}/${list.length}</h2>
+      <p class="muted" style="font-size:13px">Игрок видит только отмеченные. Сохраняется сразу, без «Опубликовать».</p>` +
+      (list.length ? list.map(x => `<div class="item ${x.open?"on":""}" data-mv="${esc(x.id)}">
+        <label class="chk big"><input type="checkbox" ${x.open?"checked":""}> показать</label>
+        <div><div class="ititle"><span class="pill">${esc(x.night||"")}</span> <span class="pill">${esc((x.by||"").replace("Видения мастеров · ",""))}</span></div>
+        <div class="icard">${esc(x.title)}</div></div></div>`).join("") : `<p class="muted">Нет.</p>`);
+    box.querySelectorAll("[data-mv] input").forEach(inp => inp.onchange = async () => {
+      const id = inp.closest("[data-mv]").dataset.mv, on = inp.checked;
+      inp.disabled = true; status("Сохраняю…");
+      try{
+        await mutate(pathOf(p), d => { d = d || {}; (d.extra||[]).forEach(x => { if(x.id === id) x.open = on; }); return d; },
+          (on ? "Открыто видение — " : "Скрыто видение — ") + p.title);
+        status(on ? "Открыто. Игрок увидит через 1–2 минуты." : "Скрыто.", "ok");
+      }catch(e){ status("Ошибка: " + e.message, "bad"); }
+      renderMasterVisions(p);
+    });
+  }
   function allExtras(){
     const map = new Map();
-    PLAYERS.forEach(p => ((remote[pathOf(p)]||{}).extra||[]).forEach(x => {
+    PLAYERS.forEach(p => ((remote[pathOf(p)]||{}).extra||[]).filter(x => x.kind !== "master").forEach(x => {
       if(!map.has(x.id)) map.set(x.id, { ...x, to:[] });
       map.get(x.id).to.push(p.id);
     }));
@@ -262,7 +284,9 @@
         <label>Описание внутреннего<textarea data-at="internal" rows="2">${esc(m.internal.text)}</textarea></label>
         <label>Напоминалка «Помни»<textarea data-pf="notes" rows="2">${esc(m.notes)}</textarea></label>
         <label>Объявление только для этого игрока<textarea data-pf="notice" rows="2">${esc(m.notice)}</textarea></label></details>
-      <p class="muted">Видения и ивенты для игрока — во вкладке «Видения». Они сохраняются сразу, кнопка «Опубликовать» для них не нужна.</p>`;
+      <div class="box" id="mvbox"></div>
+      <p class="muted">Свои видения и ивенты для игрока — во вкладке «Видения». Они сохраняются сразу, кнопка «Опубликовать» для них не нужна.</p>`;
+    renderMasterVisions(p);
     const main = $("#main");
     main.querySelectorAll("[data-pf]").forEach(i => i.oninput = i.onchange = () => { m[i.dataset.pf] = i.type==="checkbox" ? i.checked : i.value; saveDraft(); renderTabsOnly(); });
     main.querySelectorAll("[data-arch]").forEach(sel => sel.onchange = () => { const k = sel.dataset.arch; m[k] = { name:sel.value, text: (ARCH()[k]||{})[sel.value] || "" }; saveDraft(); render(); });
