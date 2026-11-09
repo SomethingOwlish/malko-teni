@@ -39,6 +39,16 @@
       whispers:["пастырь","стадо","агнец","я знаю","не бойся","прости их","всё по плану","волкам нужен пастух"] }
   };
   const MODE = root.dataset.mode || "player";
+  /* пояснения под заголовками раздела «Осколки» */
+  const VOICE_NOTE = {
+    euthymius:"Этот голос — старый переписчик. Говорит так, будто читает по книге, и правит сам себя на полях.",
+    ashme:"Этот голос — жрица горящего сада. Говорит о боли, о матерях и о том, что вырастает из пепла.",
+    lane:"Этот голос — девочка со двора. Всё на свете для неё игра со строгими правилами.",
+    prokhor:"Этот голос — босой дурачок с паперти. Говорит наоборот, всех любит и ничего не держит в руках.",
+    tommazo:"Этот голос — исповедник из чумного города. Говорит как протокол: всё записано, каждому трижды предложена милость."
+  };
+  const VOICE_NOTE_TAIL = "Порой он говорит с тобой, если отвлечься от быта. Следи за тем, что он говорит, — там ответы.";
+  const NET_NOTE = "Эти видения приходят сами собой — то голосами, то картинками. Иди по хлебным крошкам или отдай другим.";
   const COMMON_WHISPERS = ["агнец","пятеро","не оборачивайся","скоро"];
   const V = VOICES[VOICE] || VOICES.euthymius;
   const NIGHTS = { N1:"Первая ночь", N2:"Вторая ночь", N3:"Третья ночь", N4:"Четвёртая ночь" };
@@ -318,14 +328,15 @@
     const realNight = Math.max(0, Math.min(4, +d.night || 0));
     const outs = d.outcomes||[], extra = (d.extra||[]).filter(x => x.kind === "master" ? x.open === true
       : (!x.night || +String(x.night).replace(/\D/g,"") <= realNight)).slice().reverse();
-    const sec = (ep, t, cnt) => `<div class="sec"><div class="ep">${ep}</div><div class="t">${t}</div>${cnt?`<div class="n">${cnt}</div>`:""}</div>`;
+    const sec = (ep, t, cnt, note) => `<div class="sec"><div class="ep">${ep}</div><div class="t">${t}</div>${cnt?`<div class="n">${cnt}</div>`:""}${note?`<p class="secnote">${esc(note)}</p>`:""}</div>`;
+    const vnote = VOICE_NOTE[VOICE] ? VOICE_NOTE[VOICE] + " " + VOICE_NOTE_TAIL : "";
     let h = "";
     if(!frags.length && !outs.length && !extra.length){
-      h = sec("осколки", esc(V.sub)) + `<div class="panel empty">${sym(LIT[n])}${esc(V.empty).replace(/\n/g,"<br>")}</div>`;
+      h = sec("осколки", esc(V.sub), "", vnote) + `<div class="panel empty">${sym(LIT[n])}${esc(V.empty).replace(/\n/g,"<br>")}</div>`;
     } else {
-      if(frags.length) h += sec("осколки", esc(V.sub), `${frags.length} из 7`) + frags.map(f=>fragHTML(f,seen)).join("");
+      if(frags.length) h += sec("осколки", esc(V.sub), `${frags.length} из 7`, vnote) + frags.map(f=>fragHTML(f,seen)).join("");
       if(outs.length) h += sec("осколки", esc(V.outTitle)) + outs.map(o=>fragHTML({id:o.id,night:"N4",card:o.label,text:o.text,audio:o.audio},seen)).join("");
-      if(extra.length) h += sec("осколки", "Шум Сети") + extra.map(x=>fragHTML({id:x.id,night:x.night||"",card:x.title,text:x.text,audio:x.audio},seen,x.label?`${NIGHTS[x.night]||""}${NIGHTS[x.night]?" · ":""}${x.label}`:"")).join("");
+      if(extra.length) h += sec("осколки", "Шум Сети", "", NET_NOTE) + extra.map(x=>fragHTML({id:x.id,night:x.night||"",card:x.title,text:x.text,audio:x.audio},seen,x.label?`${NIGHTS[x.night]||""}${NIGHTS[x.night]?" · ":""}${x.label}`:"")).join("");
       h += `<p class="hidline"><mark class="hid">${esc(V.hidden)}</mark></p>`;
     }
     document.getElementById("t-frags").innerHTML = h;

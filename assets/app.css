@@ -269,3 +269,5 @@ details.tz{margin-top:10px}details.tz summary{cursor:pointer;color:var(--a2p);fo
 .feather{position:absolute;top:-20px;width:7px;height:22px;border-radius:50% 50% 50% 50%/80% 80% 20% 20%;background:linear-gradient(90deg,transparent 45%,color-mix(in oklab,var(--ink) 40%,transparent) 46% 54%,transparent 55%),color-mix(in oklab,var(--muted) 35%,transparent);animation:fall linear infinite;opacity:.7}
 .nbmore{margin-top:12px}.nbmore summary{cursor:pointer;color:var(--a1now);font-family:var(--f-head);font-size:18px;list-style:none}
 .nbmore summary::-webkit-details-marker{display:none}.nbmore summary::before{content:"▸ "}.nbmore[open] summary::before{content:"▾ "}
+.sec .secnote{max-width:520px;margin:10px auto 0;font-family:var(--f-body);font-style:italic;font-size:15px;line-height:1.5;color:var(--muted);text-transform:none;letter-spacing:0}
+html[data-voice=lane] .sec .secnote{font-family:'PT Sans',sans-serif}
