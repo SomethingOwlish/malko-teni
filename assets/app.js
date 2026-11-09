@@ -332,14 +332,14 @@
     const sec = (ep, t, cnt, note) => `<div class="sec"><div class="ep">${ep}</div><div class="t">${t}</div>${cnt?`<div class="n">${cnt}</div>`:""}${note?`<p class="secnote">${esc(note)}</p>`:""}</div>`;
     const vnote = VOICE_NOTE[VOICE] ? VOICE_NOTE[VOICE] + " " + VOICE_NOTE_TAIL : "";
     let h = "";
-    if(!frags.length && !outs.length && !extra.length){
-      h = sec("осколки", esc(V.sub), "", vnote) + `<div class="panel empty">${sym(LIT[n])}${esc(V.empty).replace(/\n/g,"<br>")}</div>`;
-    } else {
-      if(frags.length) h += sec("осколки", esc(V.sub), `${frags.length} из 7`, vnote) + frags.map(f=>fragHTML(f,seen)).join("");
-      if(outs.length) h += sec("осколки", esc(V.outTitle)) + outs.map(o=>fragHTML({id:o.id,night:"N4",card:o.label,text:o.text,audio:o.audio},seen)).join("");
-      if(extra.length) h += sec("осколки", "Шум Сети", "", NET_NOTE) + extra.map(x=>fragHTML({id:x.id,night:x.night||"",card:x.title,text:x.text,audio:x.audio},seen,x.label?`${NIGHTS[x.night]||""}${NIGHTS[x.night]?" · ":""}${x.label}`:"")).join("");
-      h += `<p class="hidline"><mark class="hid">${esc(V.hidden)}</mark></p>`;
-    }
+    h += sec("осколки", esc(V.sub), frags.length ? `${frags.length} из 7` : "", vnote);
+    h += frags.length ? frags.map(f=>fragHTML(f,seen)).join("")
+                      : `<div class="panel empty">${sym(LIT[n])}${esc(V.empty).replace(/\n/g,"<br>")}</div>`;
+    if(outs.length) h += sec("осколки", esc(V.outTitle)) + outs.map(o=>fragHTML({id:o.id,night:"N4",card:o.label,text:o.text,audio:o.audio},seen)).join("");
+    h += sec("осколки", "Шум Сети", "", NET_NOTE);
+    h += extra.length ? extra.map(x=>fragHTML({id:x.id,night:x.night||"",card:x.title,text:x.text,audio:x.audio},seen,x.label?`${NIGHTS[x.night]||""}${NIGHTS[x.night]?" · ":""}${x.label}`:"")).join("")
+                      : `<div class="panel empty">Придёт потом.</div>`;
+    h += `<p class="hidline"><mark class="hid">${esc(V.hidden)}</mark></p>`;
     document.getElementById("t-frags").innerHTML = h;
     const evs = (d.events||[]).slice().sort(sortEv);
     document.getElementById("t-events").innerHTML = sec("события", "Куда зовут") +
