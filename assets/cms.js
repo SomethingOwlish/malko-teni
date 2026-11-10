@@ -180,11 +180,17 @@
   }
   function allExtras(){
     const map = new Map();
-    PLAYERS.forEach(p => ((remote[pathOf(p)]||{}).extra||[]).filter(x => x.kind !== "master").forEach(x => {
-      if(!map.has(x.id)) map.set(x.id, { ...x, to:[] });
-      map.get(x.id).to.push(p.id);
+    PLAYERS.forEach(p => ((remote[pathOf(p)]||{}).extra||[]).forEach(x => {
+      if(!map.has(x.id)) map.set(x.id, { ...x, to:[], openTo:[] });
+      const g = map.get(x.id); g.to.push(p.id); if(x.kind === "master" && x.open) g.openTo.push(p.id);
     }));
-    return [...map.values()].sort((a,b)=>(b.at||"").localeCompare(a.at||""));
+    // свежие вбросы сверху, потом по ночам
+    return [...map.values()].sort((a,b)=>(b.at||"").localeCompare(a.at||"") || (a.night||"").localeCompare(b.night||""));
+  }
+  async function setOpen(x, on){
+    for(const id of x.to){ const p = PLAYERS.find(q => q.id === id); if(!p) continue;
+      await mutate(pathOf(p), d => { d = d || {}; (d.extra||[]).forEach(e => { if(e.id === x.id) e.open = on; }); return d; },
+        (on ? "Открыто видение — " : "Скрыто видение — ") + p.title); }
   }
   async function saveExtra(x, to){
     const ids = new Set(to);
@@ -217,6 +223,7 @@
     if(coord) tabs += PLAYERS.map(p => { const m = M.players[p.id]; const cnt = Object.values(m.frag).filter(s=>s.on).length;
       return `<button class="${p.id===cur?"cur":""}" data-p="${p.id}">${esc(handleOf(p))}<small>${VOICE_NAMES[p.voice]} · ${cnt}/7${dirty(p)?" ●":""}</small></button>`; }).join("");
     tabs += `<button class="${cur==="_ev"?"cur":""}" data-p="_ev">Видения<small>и ивенты</small></button>`;
+    if(!coord) tabs += `<button class="${cur==="_sched"?"cur":""}" data-p="_sched">Расписание<small>события</small></button>`;
     if(coord) tabs += `<button class="${cur==="_sched"?"cur":""}" data-p="_sched">Расписание<small>события</small></button><button class="${cur==="_primo"?"cur":""}" data-p="_primo">Илинка<small>ТЗ, ночи, сюжет</small></button>`;
     if(coord) tabs += `<button class="${cur==="_links"?"cur":""}" data-p="_links">Ссылки<small>и общее</small></button><button class="${cur==="_keys"?"cur":""}" data-p="_keys">Ключи<small>пароли</small></button>`;
     $("#tabs").innerHTML = tabs;
@@ -306,7 +313,10 @@
   let editing = null;
   function renderEvents(){
     const list = allExtras();
-    const x = editing || { id:"", title:"", text:"", night:"", audio:"", to:[] };
+    const x = editing || { id:"", title:"", text:"", night:"", audio:"", to:[], kind:"master", open:true };
+    const isOpen = x.kind === "master" ? !!(editing ? x.openTo.length : true) : true;
+    const flt = renderEvents.flt || "all";
+    const shown = list.filter(e => flt === "all" || (flt === "closed" ? e.kind === "master" && e.openTo.length < e.to.length : !(e.kind === "master" && e.openTo.length < e.to.length)));
     $("#main").innerHTML = `
       <div class="box"><h2>${editing ? "Изменить видение" : "Вкинуть видение или ивент"}</h2>
         <div><span class="muted" style="font-size:13px">Кому</span><br>
@@ -315,21 +325,25 @@
         <label>Короткая фраза (видна сразу)<textarea id="e-title" rows="2">${esc(x.title)}</textarea></label>
         <label>Полный текст — необязательно<textarea id="e-text" rows="4">${esc(x.text)}</textarea></label>
         <div class="grid2">
-          <label>Ночь — игрок увидит с этой ночи<select id="e-night">${["","N1","N2","N3","N4"].map(n=>`<option value="${n}" ${x.night===n?"selected":""}>${n||"без ночи"}</option>`).join("")}</select></label>
+          <label>Ночь<select id="e-night">${["","N1","N2","N3","N4"].map(n=>`<option value="${n}" ${x.night===n?"selected":""}>${n||"без ночи"}</option>`).join("")}</select></label>
           <label>Аудио — необязательно<input id="e-audio" type="url" value="${esc(x.audio)}" placeholder="https://…mp3"></label>
         </div>
+        <label class="chk big"><input type="checkbox" id="e-open" ${isOpen?"checked":""}> открыть игрокам сразу</label>
+        <p class="muted" style="font-size:13px;margin-top:0">Без галочки видение ляжет закрытым — откроешь потом из списка ниже.</p>
         <label>Подпись (видят только мастера)<input id="e-by" value="${esc(x.by || S.name || "")}" placeholder="кто вкинул"></label>
         <p class="muted" style="font-size:13px">Разметка: <code>~~ложь~~{правда}</code> зачёркнуто и переписано · <code>[[скрытое]]</code> видно при выделении · <code>||имя||</code> чёрная плашка.</p>
         <button class="btn" id="e-save">${editing ? "Сохранить" : "Вкинуть"}</button>
         ${editing ? `<button class="btn ghost" id="e-cancel">Отмена</button>` : ""}
       </div>
-      <div class="box"><h2>Уже вкинуто · ${list.length}</h2>
-        ${list.map(e => `<div class="ev" data-id="${esc(e.id)}">
-          <div>${e.night?`<span class="pill">${esc(e.night)}</span> `:""}<b>${esc(e.title)}</b></div>
+      <div class="box"><h2>Все видения · ${list.length}</h2>
+        <div class="seg" id="flt" style="margin-bottom:8px">${[["all","все"],["closed","закрытые"],["open","открытые"]].map(([k,t]) => `<button data-f="${k}" class="${flt===k?"on":""}">${t}</button>`).join("")}</div>
+        ${shown.map(e => { const mv = e.kind === "master"; const st = !mv ? (e.kind === "lane" ? "открывается сам по ночи" : "открыто") : (e.openTo.length === e.to.length ? "открыто" : e.openTo.length ? `открыто ${e.openTo.length} из ${e.to.length}` : "закрыто");
+          return `<div class="ev" data-id="${esc(e.id)}">
+          <div>${e.night?`<span class="pill">${esc(e.night)}</span> `:""}<span class="pill ${st==="открыто"?"g":""}">${esc(st)}</span> <b>${esc(e.title)}</b></div>
           ${e.text?`<div class="muted" style="font-size:14px">${esc(e.text.slice(0,180))}${e.text.length>180?"…":""}</div>`:""}
           <div class="who">→ ${e.to.map(id => esc(charName(PLAYERS.find(p=>p.id===id)))).join(", ")}${e.by?` · ${esc(e.by)}`:""}${e.at?` · ${new Date(e.at).toLocaleString("ru-RU",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}`:""}</div>
-          <div class="acts"><button class="btn ghost small" data-edit>Изменить</button><button class="btn ghost small" data-del>Убрать</button></div>
-        </div>`).join("") || `<p class="muted">Пока ничего.</p>`}
+          <div class="acts">${mv ? (e.openTo.length < e.to.length ? `<button class="btn small" data-open>Открыть</button>` : `<button class="btn ghost small" data-close>Скрыть</button>`) : ""}<button class="btn ghost small" data-edit>Изменить</button><button class="btn ghost small" data-del>Убрать</button></div>
+        </div>`; }).join("") || `<p class="muted">Пусто.</p>`}
       </div>`;
     const tos = [...document.querySelectorAll(".to")];
     $("#toAll").checked = tos.every(t => t.checked);
@@ -342,15 +356,25 @@
       const item = { id: x.id || ("x" + Date.now().toString(36) + Math.random().toString(36).slice(2,5)),
         title: $("#e-title").value.trim(), text: $("#e-text").value.trim(), night: $("#e-night").value,
         audio: $("#e-audio").value.trim(), by: $("#e-by").value.trim(), at: x.at || new Date().toISOString() };
+      if(x.label) item.label = x.label;
+      if(x.kind === "lane"){ item.kind = "lane"; item.auto = true; }
+      else { item.kind = "master"; item.open = $("#e-open").checked; if(x.auto) item.auto = true; }
       if(!item.title && !item.text) return status("Нужна хотя бы короткая фраза.", "bad");
       if(!to.length && !editing) return status("Выбери, кому.", "bad");
       $("#e-save").disabled = true; status("Сохраняю…");
-      try{ await saveExtra(item, to); editing = null; status(to.length ? "Готово. Игроки увидят через 1–2 минуты." : "Убрано.", "ok"); }
+      try{ await saveExtra(item, to); editing = null; status(!to.length ? "Убрано." : item.open === false ? "Сохранено закрытым — открой из списка, когда нужно." : "Готово. Игроки увидят через 1–2 минуты.", "ok"); }
       catch(e){ status("Ошибка: " + e.message, "bad"); }
       renderEvents();
     };
+    document.querySelectorAll("#flt [data-f]").forEach(b => b.onclick = () => { renderEvents.flt = b.dataset.f; renderEvents(); });
     document.querySelectorAll(".ev").forEach(row => {
       const e = list.find(v => v.id === row.dataset.id);
+      const ob = row.querySelector("[data-open]"), cb = row.querySelector("[data-close]");
+      if(ob || cb) (ob || cb).onclick = async () => {
+        const on = !!ob; status(on ? "Открываю…" : "Скрываю…");
+        try{ await setOpen(e, on); status(on ? "Открыто. Игроки увидят через 1–2 минуты." : "Скрыто.", "ok"); }catch(err){ status("Ошибка: " + err.message, "bad"); }
+        renderEvents();
+      };
       row.querySelector("[data-edit]").onclick = () => { editing = { ...e }; renderEvents(); scrollTo({ top:0, behavior:"smooth" }); };
       row.querySelector("[data-del]").onclick = async () => {
         if(!confirm("Убрать это видение у всех, кому оно вкинуто?")) return;
@@ -433,6 +457,7 @@
 
   function needPrimo(){
     if(P) return false;
+    if(S.role !== "coord"){ $("#main").innerHTML = `<div class="box"><h2>Расписание пока закрыто</h2><p>Координатору: пульт → «Ключи» → «Перевыпустить ключи» (те же пароли и токен). После этого мастерам — «Выйти» и войти заново.</p></div>`; return true; }
     $("#main").innerHTML = `<div class="box"><h2>Нужен повторный вход</h2><p>Чтобы включить страницу Илинки и расписание, выйди и зайди в пульт заново паролем координатора. Это нужно один раз.</p><button class="btn" id="relog">Выйти и войти заново</button></div>`;
     $("#relog").onclick = () => $("#logout").click();
     return true;
@@ -620,7 +645,7 @@
       const salt_c = crypto.getRandomValues(new Uint8Array(16)), salt_m = crypto.getRandomValues(new Uint8Array(16));
       const kc = await deriveKey(pc, salt_c), km = await deriveKey(pm, salt_m);
       const vault = { v:1, iter:ITER, salt_c:b64e(salt_c), salt_m:b64e(salt_m),
-        coord: await seal(kc, { ...cfg, ck }), master: await seal(km, cfg), lib: setupLib ? await seal(kc, setupLib) : null };
+        coord: await seal(kc, { ...cfg, ck }), master: await seal(km, { ...cfg, ck }), lib: setupLib ? await seal(kc, setupLib) : null };
       S = { ...cfg, ck, role:"coord", name: ls.get("malk-name","") };
       st("Сохраняю в репозиторий…");
       const { sha } = await getFile(VAULT).catch(() => ({ sha:null }));
@@ -637,6 +662,7 @@
   async function startApp(){
     show("appView");
     try{ await loadRemote(); }catch(e){ status(e.message, "bad"); }
+    if(S.role !== "coord" && S.ck){ try{ await loadPrimo(); }catch(e){ status("Расписание: " + e.message, "bad"); } }
     if(S.role === "coord"){
       try{ await loadPrimo(); }catch(e){ status("Страница Илинки: " + e.message, "bad"); }
       const pl = $("#primoLink"); if(pl){ pl.classList.remove("hide"); pl.href = "../" + window.MALK_PRIMO_SLUG + "/"; }
